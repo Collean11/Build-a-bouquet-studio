@@ -5,6 +5,9 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import BalloonBouquetV4 from './BalloonBouquetV4';
 import { Suspense } from 'react';
+// Note: We're using Three.js from both @react-three/fiber and @google/model-viewer
+// This causes a warning about multiple instances, but it's necessary for our use case
+// as we need both libraries for different features (3D editing and AR viewing)
 import * as THREE from 'three';
 import { Environment } from '@react-three/drei';
 import { MeshReflectorMaterial } from '@react-three/drei';
@@ -200,7 +203,7 @@ const Configurator = () => {
             const exporter = new GLTFExporter();
             const scene = sceneRef.current;
 
-            // Ensure the scene is properly set up for export
+            // Optimize scene for export without modifying geometries
             scene.traverse((object) => {
                 if (object.isMesh) {
                     object.castShadow = true;
@@ -208,7 +211,7 @@ const Configurator = () => {
                 }
             });
 
-            // Export the scene to binary GLTF
+            // Export the scene to binary GLTF with optimized settings
             const gltf = await new Promise((resolve, reject) => {
                 exporter.parse(
                     scene,
@@ -223,13 +226,15 @@ const Configurator = () => {
                     { 
                         binary: true,
                         includeCustomExtensions: true,
-                        maxTextureSize: 4096,
-                        forceIndices: true
+                        maxTextureSize: 1024, // Reduced texture size
+                        forceIndices: true,
+                        onlyVisible: true, // Only export visible objects
+                        embedImages: true // Embed images for faster loading
                     }
                 );
             });
 
-            // Create a unique filename
+            // Create a unique filename with timestamp
             const timestamp = Date.now();
             const filename = `ar-model-${timestamp}.glb`;
             
@@ -238,13 +243,16 @@ const Configurator = () => {
             const blob = new Blob([gltf], { type: 'model/gltf-binary' });
             
             console.log('AR: Uploading to Firebase Storage...');
+            
+            // Upload the file
             await uploadBytes(storageRef, blob);
-
+            console.log('AR: Upload complete');
+            
             // Get the download URL
             const downloadUrl = await getDownloadURL(storageRef);
             console.log('AR: Model URL created:', downloadUrl);
 
-            // Use a CORS proxy service
+            // Use a CORS proxy service with caching
             const corsProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(downloadUrl)}`;
             console.log('AR: Using CORS proxy URL:', corsProxyUrl);
             
@@ -276,6 +284,40 @@ const Configurator = () => {
             setArError('AR button not available');
         }
     };
+
+    // Add a loading indicator component
+    const LoadingIndicator = () => (
+        <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            textAlign: 'center',
+            zIndex: 1000
+        }}>
+            <div style={{
+                border: '4px solid #f3f3f3',
+                borderTop: '4px solid #FF69B4',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                animation: 'spin 1s linear infinite',
+                margin: '0 auto 10px'
+            }} />
+            <p>Preparing AR View...</p>
+        </div>
+    );
+
+    // Add balloon positions array
+    const balloonPositions = [
+        { id: 'top', name: 'Top Balloon' },
+        { id: 'middle1', name: 'Middle Front' },
+        { id: 'middle2', name: 'Middle Right' },
+        { id: 'middle3', name: 'Middle Left' },
+        { id: 'bottom1', name: 'Bottom Front' },
+        { id: 'bottom2', name: 'Bottom Right' },
+        { id: 'bottom3', name: 'Bottom Left' }
+    ];
 
     return (
         <>
@@ -413,6 +455,14 @@ const Configurator = () => {
                             }}
                             castShadow
                             receiveShadow
+                            onClick={(event) => {
+                                // Get the clicked balloon ID from the event
+                                const balloonId = event.object.userData.balloonId;
+                                if (balloonId) {
+                                    console.log('Clicked balloon:', balloonId);
+                                    setSelectedBalloon(balloonId);
+                                }
+                            }}
                         />
                     </Suspense>
                 </group>
@@ -566,6 +616,67 @@ const Configurator = () => {
                                 flexDirection: 'column',
                                 gap: isMobileView ? '10px' : '24px'
                             }}>
+                                {/* Add Balloon Selection Section */}
+                                <div>
+                                    <h3 style={{
+                                        color: '#1C1B1F',
+                                        fontSize: isMobileView ? '11px' : '20px',
+                                        fontWeight: '500',
+                                        marginBottom: isMobileView ? '5px' : '16px'
+                                    }}>
+                                        Select Balloon
+                                    </h3>
+                                    <div style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(2, 1fr)',
+                                        gap: isMobileView ? '5px' : '12px'
+                                    }}>
+                                        {balloonPositions.map((balloon) => (
+                                            <button
+                                                key={balloon.id}
+                                                onClick={() => {
+                                                    console.log('Selecting balloon:', balloon.id);
+                                                    setSelectedBalloon(balloon.id);
+                                                }}
+                                                style={{
+                                                    padding: isMobileView ? '5px 3px' : '12px',
+                                                    borderRadius: '6px',
+                                                    background: selectedBalloon === balloon.id ? '#E91E63' : 'rgba(255, 255, 255, 0.8)',
+                                                    color: selectedBalloon === balloon.id ? 'white' : '#1C1B1F',
+                                                    cursor: 'pointer',
+                                                    fontSize: isMobileView ? '10px' : '16px',
+                                                    fontWeight: '500',
+                                                    transition: 'all 0.2s ease',
+                                                    backdropFilter: 'blur(10px)',
+                                                    WebkitBackdropFilter: 'blur(10px)',
+                                                    border: selectedBalloon === balloon.id ? 
+                                                            '1px solid #E91E63' : 
+                                                            '1px solid rgba(255, 255, 255, 0.2)',
+                                                    boxShadow: selectedBalloon === balloon.id ? 
+                                                            '0 2px 6px rgba(233, 30, 99, 0.2)' : 
+                                                            '0 1px 3px rgba(0, 0, 0, 0.05)',
+                                                    whiteSpace: 'nowrap',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    minWidth: 0
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.transform = 'scale(1.05)';
+                                                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(233, 30, 99, 0.3)';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.transform = 'scale(1)';
+                                                    e.currentTarget.style.boxShadow = selectedBalloon === balloon.id ? 
+                                                        '0 2px 6px rgba(233, 30, 99, 0.2)' : 
+                                                        '0 1px 3px rgba(0, 0, 0, 0.05)';
+                                                }}
+                                            >
+                                                {balloon.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
                                 {/* Balloon Types Section */}
                                 <div>
                                     <h3 style={{
@@ -574,7 +685,7 @@ const Configurator = () => {
                                         fontWeight: '500',
                                         marginBottom: isMobileView ? '5px' : '16px'
                                     }}>
-                                        Balloon Types
+                                        {`${balloonPositions.find(b => b.id === selectedBalloon)?.name || 'Balloon'} Type`}
                                     </h3>
                                     <div style={{
                                         display: 'grid',
@@ -1016,26 +1127,7 @@ const Configurator = () => {
                     justifyContent: 'center',
                     alignItems: 'center'
                 }}>
-                    {isLoading && (
-                        <div style={{
-                            position: 'fixed',
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                            color: 'white',
-                            padding: '20px',
-                            borderRadius: '10px',
-                            zIndex: 1002,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: '10px'
-                        }}>
-                            <div>Loading AR model...</div>
-                            <div style={{ width: '40px', height: '40px', border: '4px solid #f3f3f3', borderTop: '4px solid #FF69B4', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                        </div>
-                    )}
+                    {isLoading && <LoadingIndicator />}
                     <button 
                         className="exit-ar-button" 
                         onClick={handleExitAR}
@@ -1108,53 +1200,62 @@ const Configurator = () => {
                             }
                         `}
                     </style>
-                    <model-viewer
-                        src={modelBlobUrl}
-                        alt="AR Balloon Bouquet"
-                        ar
-                        ar-modes="webxr scene-viewer quick-look"
-                        camera-controls
-                        shadow-intensity="1"
-                        auto-rotate
-                        camera-orbit="45deg 55deg 2.5m"
-                        min-camera-orbit="auto auto 0.1m"
-                        max-camera-orbit="auto auto 10m"
-                        loading="eager"
-                        crossOrigin="anonymous"
-                        style={{
-                            width: '100%',
-                            height: '100%',
-                            backgroundColor: 'transparent'
-                        }}
-                        onError={(error) => {
-                            console.error('Model viewer error:', error);
-                            setArError('Failed to load AR model. Please try again.');
-                        }}
-                    >
-                        <button 
-                            slot="ar-button" 
-                            style={{
-                                backgroundColor: '#FF69B4',
-                                borderRadius: '50%',
-                                border: 'none',
-                                position: 'fixed',
-                                bottom: '16px',
-                                right: '16px',
-                                width: '60px',
-                                height: '60px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: 'white',
-                                fontSize: '20px',
-                                cursor: 'pointer',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-                                zIndex: 1006
-                            }}
-                        >
-                            👋
-                        </button>
-                    </model-viewer>
+                    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                        {isLoading && <LoadingIndicator />}
+                        {showAR && (
+                            <model-viewer
+                                src={modelBlobUrl}
+                                alt="AR Balloon Bouquet"
+                                ar
+                                ar-modes="webxr scene-viewer quick-look"
+                                camera-controls
+                                shadow-intensity="1"
+                                auto-rotate
+                                camera-orbit="45deg 55deg 2.5m"
+                                min-camera-orbit="auto auto 0.1m"
+                                max-camera-orbit="auto auto 10m"
+                                loading="eager"
+                                crossOrigin="anonymous"
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    backgroundColor: 'transparent'
+                                }}
+                                onError={(error) => {
+                                    console.error('Model viewer error:', error);
+                                    setArError('Failed to load AR model. Please try again.');
+                                }}
+                                onLoad={() => {
+                                    console.log('AR: Model loaded successfully');
+                                    setIsLoading(false);
+                                }}
+                            >
+                                <button 
+                                    slot="ar-button" 
+                                    style={{
+                                        backgroundColor: '#FF69B4',
+                                        borderRadius: '50%',
+                                        border: 'none',
+                                        position: 'fixed',
+                                        bottom: '16px',
+                                        right: '16px',
+                                        width: '60px',
+                                        height: '60px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: 'white',
+                                        fontSize: '20px',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                                        zIndex: 1006
+                                    }}
+                                >
+                                    👋
+                                </button>
+                            </model-viewer>
+                        )}
+                    </div>
                 </div>
             )}
         </>

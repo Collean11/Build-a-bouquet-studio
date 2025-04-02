@@ -15,7 +15,8 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
     balloonTypes,
     toggleBalloonType,
     balloonColors,
-    balloonMaterials
+    balloonMaterials,
+    setSelectedBalloon
   } = useCustomization();
 
   const groupRef = useRef();
@@ -120,9 +121,8 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
 
   const handleBalloonClick = (balloonId, event) => {
     event.stopPropagation();
-    if (event.altKey) {
-      toggleBalloonType(balloonId);
-    }
+    console.log('Clicked balloon:', balloonId);
+    setSelectedBalloon(balloonId);
   };
 
   const typeBScale = [9.5, 9.5, 9.5];
@@ -139,7 +139,7 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
       
       {/* Top Balloon Group */}
       <group position={[0.079, 2.964, -0.112]} rotation={[-1.81, 0.243, -0.734]} scale={0.26}>
-        <mesh geometry={nodes.TopC.geometry} material={coloredMaterials.TopC || materials.Metallic} onClick={(e) => handleBalloonClick('top', e)} visible={balloonTypes.top === 'C'} />
+        <mesh geometry={nodes.TopC.geometry} material={coloredMaterials.TopC || materials.Metallic} onClick={(e) => handleBalloonClick('top', e)} visible={balloonTypes.top === 'C'} userData={{ balloonId: 'top' }} />
         <mesh 
           geometry={nodes.TopA.geometry} 
           material={coloredMaterials.TopA || materials.Latex} 
@@ -148,6 +148,7 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
           position={[-0.0001, -0.392, 0.878]}
           rotation={[1.895, 0.766, -3.078]}
           scale={1.673}
+          userData={{ balloonId: 'top' }}
         />
         <mesh 
           geometry={nodes.TopB.geometry} 
@@ -157,13 +158,14 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
           scale={typeBScale}
           rotation={[-2.752, 0.05, -0.251]}
           position={[0.537, 1.501, -2.51]}
+          userData={{ balloonId: 'top' }}
         />
         <mesh geometry={nodes.BodyStrings.geometry} material={materials.whiteString} position={[0.458, 1.627, -2.334]} rotation={[-2.743, 0.002, -1.073]} scale={9.906} />
       </group>
 
       {/* Middle1 Balloon Group */}
       <group position={[-0.138, 2.253, 0.345]} rotation={[-1.235, 0.129, -1.113]} scale={0.26}>
-        <mesh geometry={nodes.Middle1C.geometry} material={coloredMaterials.Middle1C || materials['Metallic.002']} onClick={(e) => handleBalloonClick('middle1', e)} visible={balloonTypes.middle1 === 'C'} />
+        <mesh geometry={nodes.Middle1C.geometry} material={coloredMaterials.Middle1C || materials['Metallic.002']} onClick={(e) => handleBalloonClick('middle1', e)} visible={balloonTypes.middle1 === 'C'} userData={{ balloonId: 'middle1' }} />
         <mesh 
           geometry={nodes.Middle1A.geometry} 
           material={coloredMaterials.Middle1A || materials['Latex.002']} 
@@ -172,6 +174,7 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
           position={[-0.0000, -0.692, 0.878]}
           rotation={[1.895, 0.766, -3.078]}
           scale={1.673}
+          userData={{ balloonId: 'middle1' }}
         />
         <mesh 
           geometry={nodes.Middle1B.geometry} 
@@ -181,13 +184,14 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
           scale={typeBScale}
           rotation={[-2.752, 0.05, -0.251]}
           position={[0.537, 1.501, -2.51]}
+          userData={{ balloonId: 'middle1' }}
         />
         <mesh geometry={nodes.Middle1BodyStrings.geometry} material={materials['whiteString.002']} position={[0.583, 1.473, -2.677]} rotation={[-2.751, 0.251, -0.75]} scale={9.906} />
       </group>
 
       {/* Middle2 Balloon Group */}
       <group position={[0.562, 2.258, -0.144]} rotation={[-1.351, 0.69, -2.351]} scale={0.26}>
-        <mesh geometry={nodes.Middle2C.geometry} material={coloredMaterials.Middle2C || materials['Metallic.004']} onClick={(e) => handleBalloonClick('middle2', e)} visible={balloonTypes.middle2 === 'C'} />
+        <mesh geometry={nodes.Middle2C.geometry} material={coloredMaterials.Middle2C || materials['Metallic.004']} onClick={(e) => handleBalloonClick('middle2', e)} visible={balloonTypes.middle2 === 'C'} userData={{ balloonId: 'middle2' }} />
         <mesh 
           geometry={nodes.Middle2A.geometry} 
           material={coloredMaterials.Middle2A || materials['Latex.003']} 
@@ -196,6 +200,7 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
           position={[-0.1001, -0.062, 0.878]}
           rotation={[1.895, 0.766, -3.078]}
           scale={1.673}
+          userData={{ balloonId: 'middle2' }}
         />
         <mesh 
           geometry={nodes.Middle2B.geometry} 
@@ -205,13 +210,14 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
           scale={typeBScale}
           rotation={[-2.752, 0.05, -0.251]}
           position={[0.537, 1.501, -2.51]}
+          userData={{ balloonId: 'middle2' }}
         />
         <mesh geometry={nodes.Middle2BodyStrings.geometry} material={materials['whiteString.003']} position={[0.047, 1.916, -2.53]} rotation={[-2.668, -0.1, -1.352]} scale={9.906} />
       </group>
 
       {/* Middle3 Balloon Group */}
       <group position={[-0.199, 2.206, -0.567]} rotation={[-1.655, -0.353, 3.008]} scale={0.26}>
-        <mesh geometry={nodes.Middle3C.geometry} material={coloredMaterials.Middle3C || materials['Metallic.005']} onClick={(e) => handleBalloonClick('middle3', e)} visible={balloonTypes.middle3 === 'C'} />
+        <mesh geometry={nodes.Middle3C.geometry} material={coloredMaterials.Middle3C || materials['Metallic.005']} onClick={(e) => handleBalloonClick('middle3', e)} visible={balloonTypes.middle3 === 'C'} userData={{ balloonId: 'middle3' }} />
         <mesh 
           geometry={nodes.Middle3A.geometry} 
           material={coloredMaterials.Middle3A || materials['Latex.004']} 
@@ -220,6 +226,7 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
           position={[-0.0001, -0.392, 0.878]}
           rotation={[1.895, 0.766, -3.078]}
           scale={1.673}
+          userData={{ balloonId: 'middle3' }}
         />
         <mesh 
           geometry={nodes.Middle3B.geometry} 
@@ -229,13 +236,14 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
           scale={typeBScale}
           rotation={[-2.752, 0.05, -0.251]}
           position={[0.537, 1.501, -2.51]}
+          userData={{ balloonId: 'middle3' }}
         />
         <mesh geometry={nodes.Middle3BodyStrings.geometry} material={materials['whiteString.004']} position={[0.536, 1.874, -3.049]} rotation={[-2.857, 0.218, -0.968]} scale={9.906} />
       </group>
 
       {/* Bottom1 Balloon Group */}
       <group position={[0.212, 1.25, 0.506]} rotation={[-1.257, 0.295, -0.309]} scale={0.26}>
-        <mesh geometry={nodes.Bottom1C.geometry} material={coloredMaterials.Bottom1C || materials['Metallic.006']} onClick={(e) => handleBalloonClick('bottom1', e)} visible={balloonTypes.bottom1 === 'C'} />
+        <mesh geometry={nodes.Bottom1C.geometry} material={coloredMaterials.Bottom1C || materials['Metallic.006']} onClick={(e) => handleBalloonClick('bottom1', e)} visible={balloonTypes.bottom1 === 'C'} userData={{ balloonId: 'bottom1' }} />
         <mesh 
           geometry={nodes.Bottom1A.geometry} 
           material={coloredMaterials.Bottom1A || materials['Latex.005']} 
@@ -244,6 +252,7 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
           position={[-0.0001, -0.392, 0.878]}
           rotation={[1.895, 0.766, -3.078]}
           scale={1.673}
+          userData={{ balloonId: 'bottom1' }}
         />
         <mesh 
           geometry={nodes.Bottom1B.geometry} 
@@ -253,13 +262,14 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
           scale={typeBScale}
           rotation={[-2.752, 0.05, -0.251]}
           position={[0.537, 1.501, -2.51]}
+          userData={{ balloonId: 'bottom1' }}
         />
         <mesh geometry={nodes.Bottom1ABodyStrings.geometry} material={materials['whiteString.005']} position={[0.431, 1.817, -2.654]} rotation={[-2.6, 0.145, -0.899]} scale={9.906} />
       </group>
 
       {/* Bottom2 Balloon Group */}
       <group position={[0.372, 1.217, -0.462]} rotation={[-2.069, 0.624, -1.101]} scale={0.26}>
-        <mesh geometry={nodes.Bottom2C.geometry} material={coloredMaterials.Bottom2C || materials['Metallic.007']} onClick={(e) => handleBalloonClick('bottom2', e)} visible={balloonTypes.bottom2 === 'C'} />
+        <mesh geometry={nodes.Bottom2C.geometry} material={coloredMaterials.Bottom2C || materials['Metallic.007']} onClick={(e) => handleBalloonClick('bottom2', e)} visible={balloonTypes.bottom2 === 'C'} userData={{ balloonId: 'bottom2' }} />
         <mesh 
           geometry={nodes.Bottom2A.geometry} 
           material={coloredMaterials.Bottom2A || materials['Latex.006']} 
@@ -268,6 +278,7 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
           position={[-0.0001, -0.392, 0.878]}
           rotation={[1.895, 0.766, -3.078]}
           scale={1.673}
+          userData={{ balloonId: 'bottom2' }}
         />
         <mesh 
           geometry={nodes.Bottom2B.geometry} 
@@ -277,13 +288,14 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
           scale={typeBScale}
           rotation={[-2.752, 0.05, -0.251]}
           position={[0.537, 1.501, -2.51]}
+          userData={{ balloonId: 'bottom2' }}
         />
         <mesh geometry={nodes.Bottom1ABodyStrings001.geometry} material={materials['whiteString.006']} position={[0.591, 1.662, -2.547]} rotation={[-2.813, 0.127, -1.047]} scale={9.906} />
       </group>
 
       {/* Bottom3 Balloon Group */}
       <group position={[-0.453, 1.267, -0.174]} rotation={[-1.349, -0.318, -2.183]} scale={0.26}>
-        <mesh geometry={nodes.Bottom3C.geometry} material={coloredMaterials.Bottom3C || materials['Metallic.008']} onClick={(e) => handleBalloonClick('bottom3', e)} visible={balloonTypes.bottom3 === 'C'} />
+        <mesh geometry={nodes.Bottom3C.geometry} material={coloredMaterials.Bottom3C || materials['Metallic.008']} onClick={(e) => handleBalloonClick('bottom3', e)} visible={balloonTypes.bottom3 === 'C'} userData={{ balloonId: 'bottom3' }} />
         <mesh 
           geometry={nodes.Bottom3A.geometry} 
           material={coloredMaterials.Bottom3A || materials['Latex.007']} 
@@ -292,6 +304,7 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
           position={[-0.0001, -0.392, 0.878]}
           rotation={[1.895, 0.766, -3.078]}
           scale={1.673}
+          userData={{ balloonId: 'bottom3' }}
         />
         <mesh 
           geometry={nodes.Bottom3B.geometry} 
@@ -301,6 +314,7 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
           scale={typeBScale}
           rotation={[-2.752, 0.05, -0.251]}
           position={[0.537, 1.501, -2.51]}
+          userData={{ balloonId: 'bottom3' }}
         />
         <mesh geometry={nodes.Bottom3BodyStrings.geometry} material={materials['whiteString.007']} position={[0.491, 1.78, -2.5]} rotation={[-2.507, 0.271, -0.957]} scale={9.906} />
       </group>
