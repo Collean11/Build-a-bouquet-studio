@@ -8,7 +8,8 @@ service firebase.storage {
     // Allow public read access to all files
     match /{allPaths=**} {
       allow read: if true;
-      allow write: if false;
+      allow write: if true;  // Allow all writes for now
+      allow delete: if true; // Allow all deletes for now
       
       // Add CORS headers
       function corsHeaders() {
@@ -21,9 +22,12 @@ service firebase.storage {
         };
       }
     }
+    
+    // Specific rules for AR models
     match /ar-models/{modelId} {
       allow read: if true;
-      allow write: if false;
+      allow write: if true;
+      allow delete: if true;
     }
   }
 }

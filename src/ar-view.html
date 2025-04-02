@@ -69,9 +69,34 @@
         ar-scale="fixed"
         ar-placement="floor"
         ar-button
-        loading="eager"
+        loading="lazy"
         reveal="interaction"
         format="glb"
+        preload
+        crossOrigin="anonymous"
+        crossorigin="anonymous"
+        progressive-loading
+        progressive-loading-threshold="0.5"
+        progressive-loading-interval="100"
+        progressive-loading-buffer="0.5"
+        progressive-loading-max-buffer="1"
+        progressive-loading-min-buffer="0.1"
+        progressive-loading-max-resolution="1024"
+        progressive-loading-min-resolution="256"
+        progressive-loading-max-texture-size="1024"
+        progressive-loading-min-texture-size="256"
+        progressive-loading-max-geometry-size="100000"
+        progressive-loading-min-geometry-size="10000"
+        progressive-loading-max-material-size="1000"
+        progressive-loading-min-material-size="100"
+        progressive-loading-max-animation-size="1000"
+        progressive-loading-min-animation-size="100"
+        progressive-loading-max-accessor-size="1000"
+        progressive-loading-min-accessor-size="100"
+        progressive-loading-max-buffer-view-size="1000"
+        progressive-loading-min-buffer-view-size="100"
+        progressive-loading-max-buffer-size="1000"
+        progressive-loading-min-buffer-size="100"
     ></model-viewer>
     <script>
         const modelViewer = document.getElementById('ar-model');
@@ -84,6 +109,8 @@
         
         if (modelUrl) {
             console.log('Loading model from URL:', modelUrl);
+            
+            // Set the model source directly
             modelViewer.src = decodeURIComponent(modelUrl);
             
             // Add event listeners for model-viewer events

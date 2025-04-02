@@ -158,7 +158,18 @@ app.get('/api/model/:configId', async (req, res) => {
                     binary: true,
                     embedImages: true,
                     forceIndices: true,
-                    includeCustomExtensions: true
+                    includeCustomExtensions: true,
+                    optimize: true,
+                    maxTextureSize: 1024,
+                    forceIndices: true,
+                    optimizeVertices: true,
+                    optimizeMaterials: true,
+                    optimizeMeshes: true,
+                    optimizeTextures: true,
+                    optimizeAnimations: true,
+                    optimizeAccessors: true,
+                    optimizeBufferViews: true,
+                    optimizeBuffers: true
                 }
             );
         });

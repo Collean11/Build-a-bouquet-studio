@@ -162,6 +162,41 @@ const Configurator = () => {
         if (showAR && modelBlobUrl) {
             const modelViewer = document.querySelector('model-viewer');
             if (modelViewer) {
+                // Preload the model with CORS handling
+                const preloadModel = async () => {
+                    try {
+                        const response = await fetch(modelBlobUrl, {
+                            mode: 'cors',
+                            credentials: 'omit',
+                            headers: {
+                                'Accept': 'model/gltf-binary'
+                            }
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        
+                        const blob = await response.blob();
+                        const cache = await caches.open('model-cache');
+                        await cache.put(modelBlobUrl, new Response(blob, {
+                            headers: {
+                                'Content-Type': 'model/gltf-binary',
+                                'Access-Control-Allow-Origin': '*'
+                            }
+                        }));
+                        
+                        // Set the model source directly
+                        modelViewer.src = modelBlobUrl;
+                    } catch (error) {
+                        console.error('Error preloading model:', error);
+                        // Set the model source directly even if preload fails
+                        modelViewer.src = modelBlobUrl;
+                    }
+                };
+
+                preloadModel();
+
                 const handleLoad = () => {
                     // Force AR button to be visible
                     const arButton = modelViewer.shadowRoot?.querySelector('#ar-button');
@@ -226,10 +261,27 @@ const Configurator = () => {
                     { 
                         binary: true,
                         includeCustomExtensions: true,
-                        maxTextureSize: 1024, // Reduced texture size
+                        maxTextureSize: 512,
                         forceIndices: true,
-                        onlyVisible: true, // Only export visible objects
-                        embedImages: true // Embed images for faster loading
+                        onlyVisible: true,
+                        embedImages: true,
+                        optimize: true,
+                        optimizeVertices: true,
+                        optimizeMaterials: true,
+                        optimizeMeshes: true,
+                        optimizeTextures: true,
+                        optimizeAnimations: true,
+                        optimizeAccessors: true,
+                        optimizeBufferViews: true,
+                        optimizeBuffers: true,
+                        maxVertexCount: 65536,
+                        maxIndexCount: 65536,
+                        maxMaterialCount: 32,
+                        maxTextureCount: 16,
+                        maxAnimationCount: 8,
+                        maxAccessorCount: 64,
+                        maxBufferViewCount: 32,
+                        maxBufferCount: 8
                     }
                 );
             });
@@ -244,20 +296,34 @@ const Configurator = () => {
             
             console.log('AR: Uploading to Firebase Storage...');
             
-            // Upload the file
-            await uploadBytes(storageRef, blob);
+            // Upload the file with metadata
+            await uploadBytes(storageRef, blob, {
+                contentType: 'model/gltf-binary',
+                cacheControl: 'public, max-age=31536000',
+                customMetadata: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET, HEAD, PUT, POST, DELETE, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type, Content-Disposition, Origin, Accept',
+                    'Access-Control-Max-Age': '3600',
+                    'Access-Control-Expose-Headers': 'Content-Type, Content-Disposition'
+                }
+            });
+            
             console.log('AR: Upload complete');
             
             // Get the download URL
             const downloadUrl = await getDownloadURL(storageRef);
             console.log('AR: Model URL created:', downloadUrl);
-
-            // Use a CORS proxy service with caching
-            const corsProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(downloadUrl)}`;
-            console.log('AR: Using CORS proxy URL:', corsProxyUrl);
+            
+            // Extract the model path from the Firebase URL
+            const modelPath = `ar-models/${filename}`;
+            
+            // Use our proxy server URL
+            const proxyUrl = `http://localhost:5182/model/${modelPath}`;
+            console.log('AR: Using proxy URL:', proxyUrl);
             
             // Store the URL in state
-            setModelBlobUrl(corsProxyUrl);
+            setModelBlobUrl(proxyUrl);
             setShowAR(true);
             setIsLoading(false);
             console.log('AR: Model ready for viewing');
