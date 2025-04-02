@@ -64,10 +64,10 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
           switch(materialType) {
             case 'pearl':
               material.metalness = 0.1;
-              material.roughness = 0.2;
+              material.roughness = 0.15;
               material.clearcoat = 1.0;
               material.clearcoatRoughness = 0.05;
-              material.iridescence = 0.8;
+              material.iridescence = 1.0;
               material.iridescenceIOR = 1.5;
               material.sheen = 1.0;
               material.sheenRoughness = 0.2;
@@ -77,7 +77,7 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
               material.opacity = 1.0;
               material.attenuationColor = new Color(0.95, 0.95, 1.0);
               material.attenuationDistance = 1.0;
-              material.envMapIntensity = 2.0;
+              material.envMapIntensity = 2.5;
               break;
             case 'metallic':
               material.metalness = 0.95;

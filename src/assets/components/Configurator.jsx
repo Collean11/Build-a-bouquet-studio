@@ -22,6 +22,16 @@ const balloonTypeOptions = [
 
 const backgroundOptions = [
     { 
+        name: 'Black', 
+        value: '#000000', 
+        primaryColor: '#333333' 
+    },
+    { 
+        name: 'White', 
+        value: '#FFFFFF', 
+        primaryColor: '#EEEEEE' 
+    },
+    { 
         name: 'Sunset', 
         value: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E53 50%, #FFD93D 100%)', 
         primaryColor: '#FF6B6B' 
@@ -53,8 +63,8 @@ const backgroundOptions = [
     },
     { 
         name: 'Rose', 
-        value: 'linear-gradient(135deg, #FF9A9E 0%, #FAD0C4 50%, #FFE4E1 100%)', 
-        primaryColor: '#FF9A9E' 
+        value: 'linear-gradient(135deg, #E91E63 0%, #FF80AB 50%, #FFC0CB 100%)',
+        primaryColor: '#E91E63'
     },
     { 
         name: 'Forest', 
@@ -621,9 +631,10 @@ const Configurator = () => {
                 return (
                     // Wrap the grid in the scrollable div
                     <div style={{
+                        display: 'flex',
                         overflowY: 'auto',
-                        maxHeight: isMobileView ? '80px' : '150px',
-                        paddingRight: '5px'
+                        maxHeight: isMobileView ? '80px' : '150px', 
+                        paddingRight: '5px' 
                     }}>
                         {backgroundGrid}
                     </div>
@@ -866,12 +877,14 @@ const Configurator = () => {
                 bottom: 0,
                 width: '100vw',
                 height: '100vh',
-                backgroundImage: selectedBackground,
+                ...(selectedBackground.startsWith('linear-gradient') ? 
+                    { backgroundImage: selectedBackground } : 
+                    { backgroundColor: selectedBackground }),
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 zIndex: 0,
                 pointerEvents: 'auto',
-                transition: 'background-image 0.3s ease',
+                transition: 'background-color 0.3s ease, background-image 0.3s ease', 
                 margin: 0,
                 padding: 0,
                 overflow: 'hidden'
