@@ -52,31 +52,52 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
           // Apply material-specific properties
           switch(materialType) {
             case 'pearl':
-              material.metalness = 0.3;
-              material.roughness = 0.4;
-              material.clearcoat = 0.8;
-              material.clearcoatRoughness = 0.2;
-              material.iridescence = 0.3;
+              material.metalness = 0.1;
+              material.roughness = 0.2;
+              material.clearcoat = 1.0;
+              material.clearcoatRoughness = 0.05;
+              material.iridescence = 0.8;
               material.iridescenceIOR = 1.5;
-              material.sheen = 0.7;
-              material.sheenRoughness = 0.4;
-              material.sheenColor = new THREE.Color(0.9, 0.9, 0.95);
+              material.sheen = 1.0;
+              material.sheenRoughness = 0.2;
+              material.sheenColor = new THREE.Color(1.0, 1.0, 1.0);
+              material.envMapIntensity = 2.0;
+              material.transmission = 0.0;
+              material.transparent = false;
+              material.opacity = 1.0;
+              material.attenuationColor = new THREE.Color(0.95, 0.95, 1.0);
+              material.attenuationDistance = 1.0;
               break;
             case 'metallic':
-              material.metalness = 0.9;
-              material.roughness = 0.1;
+              material.metalness = 0.95;
+              material.roughness = 0.05;
               material.clearcoat = 1.0;
-              material.clearcoatRoughness = 0.1;
-              material.envMapIntensity = 2.0;
+              material.clearcoatRoughness = 0.05;
+              material.envMapIntensity = 2.5;
+              material.sheen = 0.5;
+              material.sheenRoughness = 0.2;
+              material.sheenColor = new THREE.Color(0.8, 0.8, 0.8);
+              material.transmission = 0.05;
+              material.transparent = true;
+              material.opacity = 0.98;
+              material.attenuationColor = new THREE.Color(0.7, 0.7, 0.7);
+              material.attenuationDistance = 1.0;
               break;
             case 'standard':
             default:
+              material.roughness = 0.4;
               material.metalness = 0.0;
-              material.roughness = 0.7;
-              material.clearcoat = 0.5;
-              material.transmission = 0.15;
+              material.clearcoat = 0.6;
+              material.clearcoatRoughness = 0.2;
+              material.sheen = 0.3;
+              material.sheenRoughness = 0.4;
+              material.envMapIntensity = 1.2;
+              material.transmission = 0.1;
               material.transparent = true;
-              material.opacity = 0.9;
+              material.opacity = 0.95;
+              material.sheenColor.set(0.9, 0.9, 0.9);
+              material.attenuationColor = new THREE.Color(0.9, 0.9, 0.9);
+              material.attenuationDistance = 1.0;
               break;
           }
           
@@ -100,6 +121,14 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
 
   // Consistent scale for Type B balloons
   const typeBScale = [9.5, 9.5, 9.5];
+
+  // Camera setup
+  const camera = new THREE.PerspectiveCamera(
+    45, // FOV
+    window.innerWidth / window.innerHeight,
+    0.1, // Near plane - reduced from 0.5 to prevent clipping when zooming in
+    1000 // Far plane - increased from 500 to ensure distant objects are visible
+  );
 
   return (
     <group ref={groupRef} position={position} scale={scale} dispose={null}>

@@ -22,20 +22,14 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { Suspense, useState, useRef, useEffect, useCallback } from "react";
 import { useCustomization } from "../../contexts/Customization";
 import BalloonBouquetV4 from "./BalloonBouquetV4";
-import Configurator from "./Configurator";
 import { Model as PhotoStudio } from "./PhotoStudioExport";
 import { useSpring, animated } from '@react-spring/three';
 import { useGesture } from '@use-gesture/react';
 import { XR, useXR } from '@react-three/xr';
 import { useNavigate } from 'react-router-dom';
-import { 
-    THREE,
-    GLTFExporter,
-    Vector2,
-    Raycaster,
-    DoubleSide,
-    Color
-} from '../../utils/three';
+import * as THREE from 'three';
+import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter';
+import { Vector2, Raycaster, DoubleSide, Color } from 'three';
 
 const EnvironmentProps = ({ environment }) => {
     const getPropsForEnvironment = (env) => {
@@ -416,12 +410,10 @@ const BalloonClickHandler = () => {
     return null;
 };
 
-const Scene = () => {
+const Experience = () => {
+    const { selectedEnvironment, setScene } = useCustomization();
     const [isARMode, setIsARMode] = useState(false);
-    const { 
-        selectedBalloon,
-        setSelectedBalloon,
-    } = useCustomization();
+    const { selectedBalloon, setSelectedBalloon } = useCustomization();
     const [selectedBalloonMesh, setSelectedBalloonMesh] = useState(null);
     const navigate = useNavigate();
     const sceneRef = useRef();
@@ -538,60 +530,76 @@ const Scene = () => {
     };
 
     return (
-        <group ref={sceneRef}>
-            <Suspense fallback={null}>
-                <color attach="background" args={['#ffffff']} />
-                <fog attach="fog" args={['#ffffff', 5, 20]} />
-                
-                <BalloonClickHandler />
-                
-                <Stage
-                    intensity={0.5}
-                    environment="studio"
-                    adjustCamera={false}
-                    preset="rembrandt"
-                    shadows
-                >
-                    <BalloonBouquetV4 
-                        position={[0, 0, 0]}
-                        scale={1}
-                        userData={{ 
-                            isBalloonBouquet: true,
-                            isARViewable: true
-                        }}
-                    />
-                </Stage>
-
-                <OrbitControls
-                    makeDefault
-                    minPolarAngle={Math.PI / 3}
-                    maxPolarAngle={Math.PI / 2}
-                    minDistance={3}
-                    maxDistance={10}
-                    target={[0, 0, 0]}
-                    enablePan={false}
-                    enableZoom={true}
-                    enableRotate={true}
-                    zoomSpeed={0.5}
-                    rotateSpeed={0.5}
-                    panSpeed={0.5}
-                />
-            </Suspense>
-        </group>
-    );
-};
-
-const Experience = () => {
-    const { selectedEnvironment, setScene } = useCustomization();
-
-    return (
         <div style={{ 
             width: '100vw', 
             height: '100vh',
             position: 'relative',
             overflow: 'hidden'
         }}>
-            <Configurator />
+            <Canvas
+                shadows
+                camera={{ position: [0, -6, 3], fov: 45 }}
+                gl={{ preserveDrawingBuffer: true }}
+            >
+                <Suspense fallback={null}>
+                    <group ref={sceneRef}>
+                        {/* Single environment setup */}
+                        <Environment
+                            preset="studio"
+                            background
+                            blur={0.8}
+                            resolution={512}
+                            ground={{
+                                height: 15,
+                                radius: 40,
+                                scale: 1000
+                            }}
+                        />
+                        
+                        {/* Single lighting setup */}
+                        <ambientLight intensity={0.2} />
+                        <directionalLight
+                            position={[10, 10, 5]}
+                            intensity={2}
+                            castShadow
+                            shadow-mapSize-width={2048}
+                            shadow-mapSize-height={2048}
+                            shadow-camera-far={50}
+                            shadow-camera-left={-10}
+                            shadow-camera-right={10}
+                            shadow-camera-top={10}
+                            shadow-camera-bottom={-10}
+                        />
+                        
+                        <BalloonClickHandler />
+                        
+                        {/* Balloon bouquet */}
+                        <BalloonBouquetV4 
+                            position={[0, -5, 0]}
+                            scale={100}
+                            userData={{ 
+                                isBalloonBouquet: true,
+                                isARViewable: true
+                            }}
+                        />
+
+                        <OrbitControls
+                            makeDefault
+                            minPolarAngle={Math.PI / 8}
+                            maxPolarAngle={Math.PI / 2}
+                            minDistance={20}
+                            maxDistance={80}
+                            target={[0, 0, 0]}
+                            enablePan={false}
+                            enableZoom={true}
+                            enableRotate={true}
+                            zoomSpeed={0.5}
+                            rotateSpeed={0.5}
+                            panSpeed={0.5}
+                        />
+                    </group>
+                </Suspense>
+            </Canvas>
         </div>
     );
 };

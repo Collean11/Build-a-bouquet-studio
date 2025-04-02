@@ -68,18 +68,36 @@ const Configurator = () => {
     useEffect(() => {
         const checkAR = async () => {
             try {
+                // Check platform detection
+                const userAgent = navigator.userAgent;
+                const platform = navigator.platform;
+                
                 // Check if we're on iOS
-                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
                 if (isIOS) {
-                    console.log('iOS device detected, Quick Look AR available');
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log('Device detected: iOS');
+                    }
+                    setArSupported(true);
+                    return;
+                }
+                
+                // Check if we're on macOS
+                const isMac = /Mac/.test(platform);
+                if (isMac) {
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log('Device detected: MacOS');
+                    }
                     setArSupported(true);
                     return;
                 }
                 
                 // Check if we're on Android
-                const isAndroid = /Android/i.test(navigator.userAgent);
+                const isAndroid = /Android/.test(userAgent);
                 if (isAndroid) {
-                    console.log('Android device detected, Scene Viewer AR available');
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log('Device detected: Android');
+                    }
                     setArSupported(true);
                     return;
                 }
@@ -88,11 +106,11 @@ const Configurator = () => {
                 if (navigator.xr) {
                     const supported = await navigator.xr.isSessionSupported('immersive-ar');
                     setArSupported(supported);
-                    if (!supported) {
-                        console.log('WebXR AR not supported, checking for other AR modes');
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log('WebXR support:', supported ? 'Yes' : 'No');
                     }
-                } else {
-                    console.log('WebXR not available, checking for other AR modes');
+                } else if (process.env.NODE_ENV === 'development') {
+                    console.log('WebXR not available');
                 }
 
                 // Always set AR supported to true to show the button
@@ -229,259 +247,539 @@ const Configurator = () => {
 
             {!showAR && (
                 <>
-                    <div className="configurator-container" style={{
-                        position: 'fixed',
-                        top: isMobileView ? '60px' : '20px',
-                        left: isMobileView && !showUI ? '-160px' : '20px',
-                        zIndex: 1001,
-                        backgroundColor: 'rgba(255, 255, 255, 0.7)',
-                        backdropFilter: 'blur(20px)',
-                        WebkitBackdropFilter: 'blur(20px)',
-                        color: '#1C1B1F',
-                        padding: isMobileView ? '10px' : '20px',
-                        borderRadius: '16px',
-                        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.1)',
-                        width: isMobileView ? '140px' : '300px',
-                        maxHeight: '90vh',
-                        overflowY: 'auto',
-                        border: '1px solid rgba(255, 255, 255, 0.3)',
-                        transition: 'all 0.3s ease'
-                    }}>
-                        <div style={{
-                            marginBottom: isMobileView ? '10px' : '24px',
-                            textAlign: 'center'
-                        }}>
-                            <h2 style={{
-                                color: '#1C1B1F',
-                                fontSize: isMobileView ? '14px' : '28px',
-                                fontWeight: '600',
-                                marginBottom: isMobileView ? '3px' : '8px',
-                                background: 'linear-gradient(135deg, #E91E63, #FF4081)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent'
-                            }}>
-                                Customize Your Bouquet
-                            </h2>
-                            <p style={{
-                                color: '#49454F',
-                                fontSize: isMobileView ? '10px' : '16px',
-                                lineHeight: isMobileView ? '12px' : '24px',
-                                margin: 0
-                            }}>
-                                Create your perfect balloon arrangement
-                            </p>
-                        </div>
-
-                        <div style={{
+                    <button 
+                        onClick={() => setShowUI(!showUI)}
+                        style={{
+                            position: 'fixed',
+                            top: isMobileView ? '10px' : '20px',
+                            right: '20px',
+                            zIndex: 1002,
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            backgroundColor: '#E91E63',
+                            color: 'white',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '24px',
+                            lineHeight: '1',
+                            boxShadow: '0 4px 12px rgba(233, 30, 99, 0.3)',
+                            transition: 'all 0.2s ease',
                             display: 'flex',
-                            flexDirection: 'column',
-                            gap: isMobileView ? '10px' : '24px'
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backdropFilter: 'blur(10px)',
+                            WebkitBackdropFilter: 'blur(10px)',
+                            padding: 0,
+                            margin: 0,
+                            textAlign: 'center',
+                            verticalAlign: 'middle'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'scale(1.1)';
+                            e.currentTarget.style.boxShadow = '0 6px 16px rgba(233, 30, 99, 0.4)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'scale(1)';
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(233, 30, 99, 0.3)';
+                        }}
+                    >
+                        <span style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '100%',
+                            height: '100%'
                         }}>
-                            {/* Balloon Types Section */}
-                            <div>
-                                <h3 style={{
+                            {showUI ? '×' : '☰'}
+                        </span>
+                    </button>
+                    {showUI && (
+                        <div className="configurator-container" style={{
+                            position: 'fixed',
+                            top: isMobileView ? '60px' : '20px',
+                            left: '20px',
+                            zIndex: 1001,
+                            backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                            backdropFilter: 'blur(20px)',
+                            WebkitBackdropFilter: 'blur(20px)',
+                            color: '#1C1B1F',
+                            padding: isMobileView ? '10px' : '20px',
+                            borderRadius: '16px',
+                            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.1)',
+                            width: isMobileView ? '140px' : '300px',
+                            maxHeight: '90vh',
+                            overflowY: 'auto',
+                            border: '1px solid rgba(255, 255, 255, 0.3)',
+                            transition: 'all 0.3s ease',
+                            transform: showUI ? 'translateX(0)' : 'translateX(-100%)',
+                            opacity: showUI ? 1 : 0,
+                            pointerEvents: showUI ? 'auto' : 'none',
+                            visibility: showUI ? 'visible' : 'hidden'
+                        }}>
+                            <div style={{
+                                marginBottom: isMobileView ? '10px' : '24px',
+                                textAlign: 'center'
+                            }}>
+                                <h2 style={{
                                     color: '#1C1B1F',
-                                    fontSize: isMobileView ? '11px' : '20px',
-                                    fontWeight: '500',
-                                    marginBottom: isMobileView ? '5px' : '16px'
+                                    fontSize: isMobileView ? '14px' : '28px',
+                                    fontWeight: '600',
+                                    marginBottom: isMobileView ? '3px' : '8px',
+                                    background: 'linear-gradient(135deg, #E91E63, #FF4081)',
+                                    WebkitBackgroundClip: 'text',
+                                    WebkitTextFillColor: 'transparent'
                                 }}>
-                                    Balloon Types
-                                </h3>
-                                <div style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: 'repeat(2, 1fr)',
-                                    gap: isMobileView ? '5px' : '12px'
+                                    Customize Your Bouquet
+                                </h2>
+                                <p style={{
+                                    color: '#49454F',
+                                    fontSize: isMobileView ? '10px' : '16px',
+                                    lineHeight: isMobileView ? '12px' : '24px',
+                                    margin: 0
                                 }}>
-                                    {balloonTypeOptions.map((type) => (
-                                        <button
-                                            key={type.value}
-                                            onClick={() => toggleBalloonType(selectedBalloon || 'top', type.value)}
-                                            style={{
-                                                padding: isMobileView ? '5px 3px' : '12px',
-                                                borderRadius: '6px',
-                                                background: balloonTypes[selectedBalloon || 'top'] === type.value ? '#E91E63' : 'rgba(255, 255, 255, 0.8)',
-                                                color: balloonTypes[selectedBalloon || 'top'] === type.value ? 'white' : '#1C1B1F',
-                                                cursor: 'pointer',
-                                                fontSize: isMobileView ? '10px' : '16px',
-                                                fontWeight: '500',
-                                                transition: 'all 0.2s ease',
-                                                backdropFilter: 'blur(10px)',
-                                                WebkitBackdropFilter: 'blur(10px)',
-                                                border: balloonTypes[selectedBalloon || 'top'] === type.value ? 
-                                                        '1px solid #E91E63' : 
-                                                        '1px solid rgba(255, 255, 255, 0.2)',
-                                                boxShadow: balloonTypes[selectedBalloon || 'top'] === type.value ? 
-                                                        '0 2px 6px rgba(233, 30, 99, 0.2)' : 
-                                                        '0 1px 3px rgba(0, 0, 0, 0.05)',
-                                                whiteSpace: 'nowrap',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                minWidth: 0
-                                            }}
-                                        >
-                                            {type.name}
-                                        </button>
-                                    ))}
-                                </div>
+                                    Create your perfect balloon arrangement
+                                </p>
                             </div>
 
-                            {/* Colors Section */}
-                            <div>
-                                <h3 style={{
-                                    color: '#1C1B1F',
-                                    fontSize: isMobileView ? '11px' : '20px',
-                                    fontWeight: '500',
-                                    marginBottom: isMobileView ? '5px' : '16px'
-                                }}>
-                                    Colors
-                                </h3>
-                                <div style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: 'repeat(4, 1fr)',
-                                    gap: isMobileView ? '5px' : '12px',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                    width: '100%'
-                                }}>
-                                    {colorOptions.map((color) => (
-                                        <button
-                                            key={color.name}
-                                            onClick={() => setColor(selectedBalloon || 'top', color.value)}
-                                            style={{
-                                                width: isMobileView ? '20px' : '36px',
-                                                height: isMobileView ? '20px' : '36px',
-                                                minWidth: isMobileView ? '20px' : '36px',
-                                                minHeight: isMobileView ? '20px' : '36px',
-                                                maxWidth: isMobileView ? '20px' : '36px',
-                                                maxHeight: isMobileView ? '20px' : '36px',
-                                                borderRadius: '50%',
-                                                border: 'none',
-                                                background: color.value,
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s ease',
-                                                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                                                position: 'relative',
-                                                margin: '0 auto',
-                                                padding: 0,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center'
-                                            }}
-                                        >
-                                            {balloonColors[selectedBalloon || 'top'] === color.value && (
-                                                <div style={{
-                                                    position: 'absolute',
-                                                    top: '-1px',
-                                                    left: '-1px',
-                                                    right: '-1px',
-                                                    bottom: '-1px',
-                                                    borderRadius: '50%',
-                                                    border: '1px solid #E91E63',
-                                                    animation: 'pulse 2s infinite'
-                                                }} />
-                                            )}
-                                        </button>
-                                    ))}
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: isMobileView ? '10px' : '24px'
+                            }}>
+                                {/* Balloon Types Section */}
+                                <div>
+                                    <h3 style={{
+                                        color: '#1C1B1F',
+                                        fontSize: isMobileView ? '11px' : '20px',
+                                        fontWeight: '500',
+                                        marginBottom: isMobileView ? '5px' : '16px'
+                                    }}>
+                                        Balloon Types
+                                    </h3>
+                                    <div style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(2, 1fr)',
+                                        gap: isMobileView ? '5px' : '12px'
+                                    }}>
+                                        {balloonTypeOptions.map((type) => (
+                                            <button
+                                                key={type.value}
+                                                onClick={() => toggleBalloonType(selectedBalloon || 'top', type.value)}
+                                                style={{
+                                                    padding: isMobileView ? '5px 3px' : '12px',
+                                                    borderRadius: '6px',
+                                                    background: balloonTypes[selectedBalloon || 'top'] === type.value ? '#E91E63' : 'rgba(255, 255, 255, 0.8)',
+                                                    color: balloonTypes[selectedBalloon || 'top'] === type.value ? 'white' : '#1C1B1F',
+                                                    cursor: 'pointer',
+                                                    fontSize: isMobileView ? '10px' : '16px',
+                                                    fontWeight: '500',
+                                                    transition: 'all 0.2s ease',
+                                                    backdropFilter: 'blur(10px)',
+                                                    WebkitBackdropFilter: 'blur(10px)',
+                                                    border: balloonTypes[selectedBalloon || 'top'] === type.value ? 
+                                                            '1px solid #E91E63' : 
+                                                            '1px solid rgba(255, 255, 255, 0.2)',
+                                                    boxShadow: balloonTypes[selectedBalloon || 'top'] === type.value ? 
+                                                            '0 2px 6px rgba(233, 30, 99, 0.2)' : 
+                                                            '0 1px 3px rgba(0, 0, 0, 0.05)',
+                                                    whiteSpace: 'nowrap',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    minWidth: 0
+                                                }}
+                                            >
+                                                {type.name}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Materials Section */}
-                            <div>
-                                <h3 style={{
-                                    color: '#1C1B1F',
-                                    fontSize: isMobileView ? '11px' : '20px',
-                                    fontWeight: '500',
-                                    marginBottom: isMobileView ? '5px' : '16px'
-                                }}>
-                                    Materials
-                                </h3>
-                                <div style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: 'repeat(2, 1fr)',
-                                    gap: isMobileView ? '5px' : '12px'
-                                }}>
-                                    {materialOptions.map((material) => (
-                                        <button
-                                            key={material.value}
-                                            onClick={() => setMaterial(selectedBalloon || 'top', material.value)}
-                                            style={{
-                                                padding: isMobileView ? '5px 3px' : '12px',
-                                                borderRadius: '6px',
-                                                background: balloonMaterials[selectedBalloon || 'top'] === material.value ? '#E91E63' : 'rgba(255, 255, 255, 0.8)',
-                                                color: balloonMaterials[selectedBalloon || 'top'] === material.value ? 'white' : '#1C1B1F',
-                                                cursor: 'pointer',
-                                                fontSize: isMobileView ? '10px' : '16px',
-                                                fontWeight: '500',
-                                                transition: 'all 0.2s ease',
-                                                backdropFilter: 'blur(10px)',
-                                                WebkitBackdropFilter: 'blur(10px)',
-                                                border: balloonMaterials[selectedBalloon || 'top'] === material.value ? 
-                                                        '1px solid #E91E63' : 
-                                                        '1px solid rgba(255, 255, 255, 0.2)',
-                                                boxShadow: balloonMaterials[selectedBalloon || 'top'] === material.value ? 
-                                                        '0 2px 6px rgba(233, 30, 99, 0.2)' : 
-                                                        '0 1px 3px rgba(0, 0, 0, 0.05)',
-                                                whiteSpace: 'nowrap',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                minWidth: 0
-                                            }}
-                                        >
-                                            {material.name}
-                                        </button>
-                                    ))}
+                                {/* Colors Section */}
+                                <div>
+                                    <h3 style={{
+                                        color: '#1C1B1F',
+                                        fontSize: isMobileView ? '11px' : '20px',
+                                        fontWeight: '500',
+                                        marginBottom: isMobileView ? '5px' : '16px'
+                                    }}>
+                                        Colors
+                                    </h3>
+                                    <div style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: isMobileView ? '8px' : '12px'
+                                    }}>
+                                        {/* Pastel Colors */}
+                                        <div>
+                                            <h4 style={{
+                                                fontSize: isMobileView ? '9px' : '14px',
+                                                color: '#666',
+                                                marginBottom: isMobileView ? '3px' : '6px'
+                                            }}>Pastel</h4>
+                                            <div style={{
+                                                display: 'grid',
+                                                gridTemplateColumns: 'repeat(3, 1fr)',
+                                                gap: isMobileView ? '4px' : '8px'
+                                            }}>
+                                                {colorOptions.slice(0, 6).map((color) => (
+                                                    <button
+                                                        key={color.name}
+                                                        onClick={() => setColor(selectedBalloon || 'top', color.value)}
+                                                        style={{
+                                                            width: isMobileView ? '20px' : '36px',
+                                                            height: isMobileView ? '20px' : '36px',
+                                                            minWidth: isMobileView ? '20px' : '36px',
+                                                            minHeight: isMobileView ? '20px' : '36px',
+                                                            maxWidth: isMobileView ? '20px' : '36px',
+                                                            maxHeight: isMobileView ? '20px' : '36px',
+                                                            borderRadius: '50%',
+                                                            border: 'none',
+                                                            background: color.value,
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.2s ease',
+                                                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                                                            position: 'relative',
+                                                            margin: '0 auto',
+                                                            padding: 0,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center'
+                                                        }}
+                                                    >
+                                                        {balloonColors[selectedBalloon || 'top'] === color.value && (
+                                                            <div style={{
+                                                                position: 'absolute',
+                                                                top: '-1px',
+                                                                left: '-1px',
+                                                                right: '-1px',
+                                                                bottom: '-1px',
+                                                                borderRadius: '50%',
+                                                                border: '1px solid #E91E63',
+                                                                animation: 'pulse 2s infinite'
+                                                            }} />
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Rich Colors */}
+                                        <div>
+                                            <h4 style={{
+                                                fontSize: isMobileView ? '9px' : '14px',
+                                                color: '#666',
+                                                marginBottom: isMobileView ? '3px' : '6px'
+                                            }}>Rich</h4>
+                                            <div style={{
+                                                display: 'grid',
+                                                gridTemplateColumns: 'repeat(3, 1fr)',
+                                                gap: isMobileView ? '4px' : '8px'
+                                            }}>
+                                                {colorOptions.slice(6, 12).map((color) => (
+                                                    <button
+                                                        key={color.name}
+                                                        onClick={() => setColor(selectedBalloon || 'top', color.value)}
+                                                        style={{
+                                                            width: isMobileView ? '20px' : '36px',
+                                                            height: isMobileView ? '20px' : '36px',
+                                                            minWidth: isMobileView ? '20px' : '36px',
+                                                            minHeight: isMobileView ? '20px' : '36px',
+                                                            maxWidth: isMobileView ? '20px' : '36px',
+                                                            maxHeight: isMobileView ? '20px' : '36px',
+                                                            borderRadius: '50%',
+                                                            border: 'none',
+                                                            background: color.value,
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.2s ease',
+                                                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                                                            position: 'relative',
+                                                            margin: '0 auto',
+                                                            padding: 0,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center'
+                                                        }}
+                                                    >
+                                                        {balloonColors[selectedBalloon || 'top'] === color.value && (
+                                                            <div style={{
+                                                                position: 'absolute',
+                                                                top: '-1px',
+                                                                left: '-1px',
+                                                                right: '-1px',
+                                                                bottom: '-1px',
+                                                                borderRadius: '50%',
+                                                                border: '1px solid #E91E63',
+                                                                animation: 'pulse 2s infinite'
+                                                            }} />
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Classic Colors */}
+                                        <div>
+                                            <h4 style={{
+                                                fontSize: isMobileView ? '9px' : '14px',
+                                                color: '#666',
+                                                marginBottom: isMobileView ? '3px' : '6px'
+                                            }}>Classic</h4>
+                                            <div style={{
+                                                display: 'grid',
+                                                gridTemplateColumns: 'repeat(3, 1fr)',
+                                                gap: isMobileView ? '4px' : '8px'
+                                            }}>
+                                                {colorOptions.slice(12, 18).map((color) => (
+                                                    <button
+                                                        key={color.name}
+                                                        onClick={() => setColor(selectedBalloon || 'top', color.value)}
+                                                        style={{
+                                                            width: isMobileView ? '20px' : '36px',
+                                                            height: isMobileView ? '20px' : '36px',
+                                                            minWidth: isMobileView ? '20px' : '36px',
+                                                            minHeight: isMobileView ? '20px' : '36px',
+                                                            maxWidth: isMobileView ? '20px' : '36px',
+                                                            maxHeight: isMobileView ? '20px' : '36px',
+                                                            borderRadius: '50%',
+                                                            border: 'none',
+                                                            background: color.value,
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.2s ease',
+                                                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                                                            position: 'relative',
+                                                            margin: '0 auto',
+                                                            padding: 0,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center'
+                                                        }}
+                                                    >
+                                                        {balloonColors[selectedBalloon || 'top'] === color.value && (
+                                                            <div style={{
+                                                                position: 'absolute',
+                                                                top: '-1px',
+                                                                left: '-1px',
+                                                                right: '-1px',
+                                                                bottom: '-1px',
+                                                                borderRadius: '50%',
+                                                                border: '1px solid #E91E63',
+                                                                animation: 'pulse 2s infinite'
+                                                            }} />
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Vibrant Colors */}
+                                        <div>
+                                            <h4 style={{
+                                                fontSize: isMobileView ? '9px' : '14px',
+                                                color: '#666',
+                                                marginBottom: isMobileView ? '3px' : '6px'
+                                            }}>Vibrant</h4>
+                                            <div style={{
+                                                display: 'grid',
+                                                gridTemplateColumns: 'repeat(3, 1fr)',
+                                                gap: isMobileView ? '4px' : '8px'
+                                            }}>
+                                                {colorOptions.slice(18, 24).map((color) => (
+                                                    <button
+                                                        key={color.name}
+                                                        onClick={() => setColor(selectedBalloon || 'top', color.value)}
+                                                        style={{
+                                                            width: isMobileView ? '20px' : '36px',
+                                                            height: isMobileView ? '20px' : '36px',
+                                                            minWidth: isMobileView ? '20px' : '36px',
+                                                            minHeight: isMobileView ? '20px' : '36px',
+                                                            maxWidth: isMobileView ? '20px' : '36px',
+                                                            maxHeight: isMobileView ? '20px' : '36px',
+                                                            borderRadius: '50%',
+                                                            border: 'none',
+                                                            background: color.value,
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.2s ease',
+                                                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                                                            position: 'relative',
+                                                            margin: '0 auto',
+                                                            padding: 0,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center'
+                                                        }}
+                                                    >
+                                                        {balloonColors[selectedBalloon || 'top'] === color.value && (
+                                                            <div style={{
+                                                                position: 'absolute',
+                                                                top: '-1px',
+                                                                left: '-1px',
+                                                                right: '-1px',
+                                                                bottom: '-1px',
+                                                                borderRadius: '50%',
+                                                                border: '1px solid #E91E63',
+                                                                animation: 'pulse 2s infinite'
+                                                            }} />
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Metallic Colors */}
+                                        <div>
+                                            <h4 style={{
+                                                fontSize: isMobileView ? '9px' : '14px',
+                                                color: '#666',
+                                                marginBottom: isMobileView ? '3px' : '6px'
+                                            }}>Metallic</h4>
+                                            <div style={{
+                                                display: 'grid',
+                                                gridTemplateColumns: 'repeat(3, 1fr)',
+                                                gap: isMobileView ? '4px' : '8px'
+                                            }}>
+                                                {colorOptions.slice(24).map((color) => (
+                                                    <button
+                                                        key={color.name}
+                                                        onClick={() => setColor(selectedBalloon || 'top', color.value)}
+                                                        style={{
+                                                            width: isMobileView ? '20px' : '36px',
+                                                            height: isMobileView ? '20px' : '36px',
+                                                            minWidth: isMobileView ? '20px' : '36px',
+                                                            minHeight: isMobileView ? '20px' : '36px',
+                                                            maxWidth: isMobileView ? '20px' : '36px',
+                                                            maxHeight: isMobileView ? '20px' : '36px',
+                                                            borderRadius: '50%',
+                                                            border: 'none',
+                                                            background: color.value,
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.2s ease',
+                                                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                                                            position: 'relative',
+                                                            margin: '0 auto',
+                                                            padding: 0,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center'
+                                                        }}
+                                                    >
+                                                        {balloonColors[selectedBalloon || 'top'] === color.value && (
+                                                            <div style={{
+                                                                position: 'absolute',
+                                                                top: '-1px',
+                                                                left: '-1px',
+                                                                right: '-1px',
+                                                                bottom: '-1px',
+                                                                borderRadius: '50%',
+                                                                border: '1px solid #E91E63',
+                                                                animation: 'pulse 2s infinite'
+                                                            }} />
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Background Colors Section */}
-                            <div>
-                                <h3 style={{
-                                    color: '#1C1B1F',
-                                    fontSize: isMobileView ? '11px' : '20px',
-                                    fontWeight: '500',
-                                    marginBottom: isMobileView ? '5px' : '16px'
-                                }}>
-                                    Background
-                                </h3>
-                                <div style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: 'repeat(2, 1fr)',
-                                    gap: isMobileView ? '5px' : '12px'
-                                }}>
-                                    {backgroundOptions.map((bg) => (
-                                        <button
-                                            key={bg.name}
-                                            onClick={() => setSelectedBackground(bg.value)}
-                                            style={{
-                                                padding: isMobileView ? '5px 3px' : '12px',
-                                                borderRadius: '6px',
-                                                background: selectedBackground === bg.value ? '#E91E63' : 'rgba(255, 255, 255, 0.8)',
-                                                color: selectedBackground === bg.value ? 'white' : '#1C1B1F',
-                                                cursor: 'pointer',
-                                                fontSize: isMobileView ? '10px' : '16px',
-                                                fontWeight: '500',
-                                                transition: 'all 0.2s ease',
-                                                backdropFilter: 'blur(10px)',
-                                                WebkitBackdropFilter: 'blur(10px)',
-                                                border: selectedBackground === bg.value ? 
-                                                        '1px solid #E91E63' : 
-                                                        '1px solid rgba(255, 255, 255, 0.2)',
-                                                boxShadow: selectedBackground === bg.value ? 
-                                                        '0 2px 6px rgba(233, 30, 99, 0.2)' : 
-                                                        '0 1px 3px rgba(0, 0, 0, 0.05)',
-                                                whiteSpace: 'nowrap',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                minWidth: 0
-                                            }}
-                                        >
-                                            {bg.name}
-                                        </button>
-                                    ))}
+                                {/* Materials Section */}
+                                <div>
+                                    <h3 style={{
+                                        color: '#1C1B1F',
+                                        fontSize: isMobileView ? '11px' : '20px',
+                                        fontWeight: '500',
+                                        marginBottom: isMobileView ? '5px' : '16px'
+                                    }}>
+                                        Materials
+                                    </h3>
+                                    <div style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(2, 1fr)',
+                                        gap: isMobileView ? '5px' : '12px'
+                                    }}>
+                                        {materialOptions.map((material) => (
+                                            <button
+                                                key={material.value}
+                                                onClick={() => setMaterial(selectedBalloon || 'top', material.value)}
+                                                style={{
+                                                    padding: isMobileView ? '5px 3px' : '12px',
+                                                    borderRadius: '6px',
+                                                    background: balloonMaterials[selectedBalloon || 'top'] === material.value ? '#E91E63' : 'rgba(255, 255, 255, 0.8)',
+                                                    color: balloonMaterials[selectedBalloon || 'top'] === material.value ? 'white' : '#1C1B1F',
+                                                    cursor: 'pointer',
+                                                    fontSize: isMobileView ? '10px' : '16px',
+                                                    fontWeight: '500',
+                                                    transition: 'all 0.2s ease',
+                                                    backdropFilter: 'blur(10px)',
+                                                    WebkitBackdropFilter: 'blur(10px)',
+                                                    border: balloonMaterials[selectedBalloon || 'top'] === material.value ? 
+                                                            '1px solid #E91E63' : 
+                                                            '1px solid rgba(255, 255, 255, 0.2)',
+                                                    boxShadow: balloonMaterials[selectedBalloon || 'top'] === material.value ? 
+                                                            '0 2px 6px rgba(233, 30, 99, 0.2)' : 
+                                                            '0 1px 3px rgba(0, 0, 0, 0.05)',
+                                                    whiteSpace: 'nowrap',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    minWidth: 0
+                                                }}
+                                            >
+                                                {material.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Background Colors Section */}
+                                <div>
+                                    <h3 style={{
+                                        color: '#1C1B1F',
+                                        fontSize: isMobileView ? '11px' : '20px',
+                                        fontWeight: '500',
+                                        marginBottom: isMobileView ? '5px' : '16px'
+                                    }}>
+                                        Background
+                                    </h3>
+                                    <div style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(2, 1fr)',
+                                        gap: isMobileView ? '5px' : '12px'
+                                    }}>
+                                        {backgroundOptions.map((bg) => (
+                                            <button
+                                                key={bg.name}
+                                                onClick={() => setSelectedBackground(bg.value)}
+                                                style={{
+                                                    padding: isMobileView ? '5px 3px' : '12px',
+                                                    borderRadius: '6px',
+                                                    background: selectedBackground === bg.value ? '#E91E63' : 'rgba(255, 255, 255, 0.8)',
+                                                    color: selectedBackground === bg.value ? 'white' : '#1C1B1F',
+                                                    cursor: 'pointer',
+                                                    fontSize: isMobileView ? '10px' : '16px',
+                                                    fontWeight: '500',
+                                                    transition: 'all 0.2s ease',
+                                                    backdropFilter: 'blur(10px)',
+                                                    WebkitBackdropFilter: 'blur(10px)',
+                                                    border: selectedBackground === bg.value ? 
+                                                            '1px solid #E91E63' : 
+                                                            '1px solid rgba(255, 255, 255, 0.2)',
+                                                    boxShadow: selectedBackground === bg.value ? 
+                                                            '0 2px 6px rgba(233, 30, 99, 0.2)' : 
+                                                            '0 1px 3px rgba(0, 0, 0, 0.05)',
+                                                    whiteSpace: 'nowrap',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    minWidth: 0
+                                                }}
+                                            >
+                                                {bg.name}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    )}
                     <button 
                         onClick={handleViewInAR}
                         style={{

@@ -35,12 +35,45 @@ export const CustomizationProvider = ({ children }) => {
     const [scene, setScene] = useState(null);
 
     const colorOptions = [
-        { name: 'Pink', value: '#FFB6C1' },
-        { name: 'Blue', value: '#87CEEB' },
-        { name: 'Yellow', value: '#FFD700' },
-        { name: 'Purple', value: '#DDA0DD' },
-        { name: 'Green', value: '#98FB98' },
-        { name: 'Orange', value: '#FFA07A' }
+        // Pastel Colors
+        { name: 'Soft Pink', value: '#FFB6C1' },
+        { name: 'Baby Blue', value: '#87CEEB' },
+        { name: 'Butter Yellow', value: '#FFD700' },
+        { name: 'Lavender', value: '#DDA0DD' },
+        { name: 'Mint Green', value: '#98FB98' },
+        { name: 'Peach', value: '#FFA07A' },
+        
+        // Rich Colors (replacing "dark")
+        { name: 'Deep Purple', value: '#4B0082' },
+        { name: 'Navy Blue', value: '#000080' },
+        { name: 'Forest Green', value: '#228B22' },
+        { name: 'Burgundy', value: '#800020' },
+        { name: 'Dark Teal', value: '#008080' },
+        { name: 'Royal Blue', value: '#4169E1' },
+        
+        // Classic Colors (replacing "basic")
+        { name: 'Pure White', value: '#FFFFFF' },
+        { name: 'Pure Black', value: '#000000' },
+        { name: 'Pure Red', value: '#FF0000' },
+        { name: 'Pure Blue', value: '#0000FF' },
+        { name: 'Pure Green', value: '#00FF00' },
+        { name: 'Pure Yellow', value: '#FFFF00' },
+        
+        // Vibrant Colors
+        { name: 'Hot Pink', value: '#FF69B4' },
+        { name: 'Electric Blue', value: '#00FFFF' },
+        { name: 'Sunshine Yellow', value: '#FFD700' },
+        { name: 'Electric Purple', value: '#9B30FF' },
+        { name: 'Neon Green', value: '#39FF14' },
+        { name: 'Coral', value: '#FF7F50' },
+        
+        // Metallic Colors
+        { name: 'Gold', value: '#FFD700' },
+        { name: 'Silver', value: '#C0C0C0' },
+        { name: 'Rose Gold', value: '#B76E79' },
+        { name: 'Bronze', value: '#CD7F32' },
+        { name: 'Platinum', value: '#E5E4E2' },
+        { name: 'Copper', value: '#B87333' }
     ];
 
     const materialOptions = [
