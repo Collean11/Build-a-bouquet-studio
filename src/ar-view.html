@@ -12,14 +12,47 @@
             width: 100vw;
             height: 100vh;
             overflow: hidden;
-            background: #ffffff;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             display: flex;
-            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .model-viewer-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            height: 90%;
+            background: rgba(255, 255, 255, 0.15) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            z-index: 1;
         }
         model-viewer {
             width: 100%;
-            height: 100%;
-            background-color: #f0f0f0;
+            height: 100vh;
+            --poster-color: transparent !important;
+            background: transparent !important;
+            --interaction-prompt-threshold: 0;
+            --background-color: transparent !important;
+            --environment-image: none !important;
+        }
+        model-viewer::part(canvas) {
+            background: transparent !important;
+            opacity: 0.95 !important;
+            background-color: transparent !important;
+        }
+        model-viewer::part(interaction-prompt) {
+            background: transparent !important;
+        }
+        model-viewer::part(default-ar-button),
+        model-viewer::part(ar-button) {
+            background: transparent !important;
         }
         #error-message {
             position: fixed;
@@ -43,65 +76,88 @@
             border-radius: 8px;
             z-index: 1000;
         }
+        .ar-button {
+            background-color: #4CAF50;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            color: white;
+            cursor: pointer;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 12px 24px;
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+        .ar-button:active {
+            background-color: #3d8b40;
+        }
+        .ar-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.15) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
     </style>
 </head>
 <body>
     <div id="loading-message">Loading 3D model...</div>
     <div id="error-message"></div>
-    <model-viewer
-        id="ar-model"
-        alt="Balloon Bouquet"
-        ar
-        ar-modes="webxr scene-viewer quick-look"
-        camera-controls
-        auto-rotate
-        camera-orbit="45deg 55deg 2.5m"
-        min-camera-orbit="auto auto 0.1m"
-        max-camera-orbit="auto auto 10m"
-        shadow-intensity="1"
-        environment-image="neutral"
-        exposure="1"
-        auto-rotate-delay="0"
-        rotation-per-second="30deg"
-        interaction-prompt="auto"
-        interaction-prompt-style="basic"
-        interaction-prompt-threshold="0"
-        ar-scale="fixed"
-        ar-placement="floor"
-        ar-button
-        loading="lazy"
-        reveal="interaction"
-        format="glb"
-        preload
-        crossOrigin="anonymous"
-        crossorigin="anonymous"
-        progressive-loading
-        progressive-loading-threshold="0.5"
-        progressive-loading-interval="100"
-        progressive-loading-buffer="0.5"
-        progressive-loading-max-buffer="1"
-        progressive-loading-min-buffer="0.1"
-        progressive-loading-max-resolution="1024"
-        progressive-loading-min-resolution="256"
-        progressive-loading-max-texture-size="1024"
-        progressive-loading-min-texture-size="256"
-        progressive-loading-max-geometry-size="100000"
-        progressive-loading-min-geometry-size="10000"
-        progressive-loading-max-material-size="1000"
-        progressive-loading-min-material-size="100"
-        progressive-loading-max-animation-size="1000"
-        progressive-loading-min-animation-size="100"
-        progressive-loading-max-accessor-size="1000"
-        progressive-loading-min-accessor-size="100"
-        progressive-loading-max-buffer-view-size="1000"
-        progressive-loading-min-buffer-view-size="100"
-        progressive-loading-max-buffer-size="1000"
-        progressive-loading-min-buffer-size="100"
-    ></model-viewer>
+    <div class="model-viewer-container">
+        <model-viewer
+            id="ar-model"
+            alt="Balloon Bouquet"
+            ar
+            ar-modes="quick-look"
+            camera-controls
+            auto-rotate
+            camera-orbit="45deg 55deg 2.5m"
+            min-camera-orbit="auto auto 0.1m"
+            max-camera-orbit="auto auto 10m"
+            shadow-intensity="1"
+            environment-image="neutral"
+            exposure="1"
+            auto-rotate-delay="0"
+            rotation-per-second="30deg"
+            interaction-prompt="auto"
+            interaction-prompt-style="basic"
+            interaction-prompt-threshold="0"
+            ar-scale="fixed"
+            ar-placement="floor"
+            ar-button
+            loading="lazy"
+            reveal="interaction"
+            format="glb"
+            preload
+            crossOrigin="anonymous"
+            crossorigin="anonymous"
+            ios-src=""
+        ></model-viewer>
+    </div>
     <script>
         const modelViewer = document.getElementById('ar-model');
         const loadingMessage = document.getElementById('loading-message');
         const errorMessage = document.getElementById('error-message');
+
+        // Function to make canvas background transparent
+        function makeCanvasTransparent() {
+            const canvas = modelViewer.shadowRoot.querySelector('canvas');
+            if (canvas) {
+                canvas.style.background = 'transparent';
+                canvas.style.opacity = '0.8';
+            }
+        }
 
         // Get the model URL from the URL parameters
         const urlParams = new URLSearchParams(window.location.search);
@@ -113,10 +169,15 @@
             // Set the model source directly
             modelViewer.src = decodeURIComponent(modelUrl);
             
+            // For iOS AR Quick Look, we need to set the ios-src
+            // This should be the same URL as the model
+            modelViewer.iosSrc = decodeURIComponent(modelUrl);
+            
             // Add event listeners for model-viewer events
             modelViewer.addEventListener('load', () => {
                 console.log('Model loaded successfully');
                 loadingMessage.style.display = 'none';
+                makeCanvasTransparent();
             });
 
             modelViewer.addEventListener('error', (error) => {
