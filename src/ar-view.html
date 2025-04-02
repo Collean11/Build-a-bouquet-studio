@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AR Balloon Bouquet</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script type="module" src="https://unpkg.com/@google/model-viewer@3.4.0/dist/model-viewer.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+        }
+        model-viewer {
+            width: 100%;
+            height: 100%;
+            background-color: #f0f0f0;
+        }
+        #error-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 0, 0, 0.1);
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+            z-index: 1000;
+        }
+        #loading-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading-message">Loading 3D model...</div>
+    <div id="error-message"></div>
+    <model-viewer
+        id="ar-model"
+        alt="Balloon Bouquet"
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+        camera-controls
+        auto-rotate
+        camera-orbit="45deg 55deg 2.5m"
+        min-camera-orbit="auto auto 0.1m"
+        max-camera-orbit="auto auto 10m"
+        shadow-intensity="1"
+        environment-image="neutral"
+        exposure="1"
+        auto-rotate-delay="0"
+        rotation-per-second="30deg"
+        interaction-prompt="auto"
+        interaction-prompt-style="basic"
+        interaction-prompt-threshold="0"
+        ar-scale="fixed"
+        ar-placement="floor"
+        ar-button
+        loading="eager"
+        reveal="interaction"
+        format="glb"
+    ></model-viewer>
+    <script>
+        const modelViewer = document.getElementById('ar-model');
+        const loadingMessage = document.getElementById('loading-message');
+        const errorMessage = document.getElementById('error-message');
+
+        // Get the model URL from the URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const modelUrl = urlParams.get('model');
+        
+        if (modelUrl) {
+            console.log('Loading model from URL:', modelUrl);
+            modelViewer.src = decodeURIComponent(modelUrl);
+            
+            // Add event listeners for model-viewer events
+            modelViewer.addEventListener('load', () => {
+                console.log('Model loaded successfully');
+                loadingMessage.style.display = 'none';
+            });
+
+            modelViewer.addEventListener('error', (error) => {
+                console.error('Model viewer error:', error);
+                loadingMessage.style.display = 'none';
+                errorMessage.textContent = 'Error loading 3D model. Please try again.';
+                errorMessage.style.display = 'block';
+            });
+
+            modelViewer.addEventListener('ar-status', (event) => {
+                console.log('AR status:', event.detail.status);
+                if (event.detail.status === 'failed') {
+                    errorMessage.textContent = 'AR view failed to initialize. Please make sure your device supports AR.';
+                    errorMessage.style.display = 'block';
+                }
+            });
+        } else {
+            console.error('No model URL provided');
+            loadingMessage.style.display = 'none';
+            errorMessage.textContent = 'No model URL provided';
+            errorMessage.style.display = 'block';
+        }
+    </script>
+</body>
+</html> 

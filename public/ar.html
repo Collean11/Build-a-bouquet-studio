@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AR Balloon Bouquet</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script type="module" src="https://unpkg.com/@google/model-viewer@3.4.0/dist/model-viewer.min.js"></script>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        model-viewer { 
+            width: 100%; 
+            height: 100vh; 
+            background: #f0f0f0;
+        }
+        #close-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <button id="close-button" onclick="window.close()">Close AR View</button>
+    <model-viewer
+        id="ar-viewer"
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+        camera-controls
+        auto-rotate
+        camera-orbit="0deg 75deg 75%"
+        min-camera-orbit="auto auto 75%"
+        max-camera-orbit="auto auto 75%"
+    ></model-viewer>
+
+    <script>
+        // Get the model URL from the query parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const modelUrl = urlParams.get('model');
+        
+        if (modelUrl) {
+            const viewer = document.getElementById('ar-viewer');
+            viewer.src = decodeURIComponent(modelUrl);
+        } else {
+            alert('No model URL provided');
+        }
+    </script>
+</body>
+</html> 

@@ -40,22 +40,35 @@ const Configurator = () => {
     useEffect(() => {
         const checkAR = async () => {
             try {
-                if (!navigator.xr) {
-                    setArSupported(false);
-                    setArError('AR is not supported on this device');
+                // Check if we're on iOS
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                if (isIOS) {
+                    console.log('iOS device detected, Quick Look AR available');
+                    setArSupported(true);
+                    return;
+                }
+                
+                // Check if we're on Android
+                const isAndroid = /Android/i.test(navigator.userAgent);
+                if (isAndroid) {
+                    console.log('Android device detected, Scene Viewer AR available');
+                    setArSupported(true);
                     return;
                 }
 
-                const supported = await navigator.xr.isSessionSupported('immersive-ar');
-                setArSupported(supported);
-                
-                if (!supported) {
-                    setArError('AR is not supported on this device');
+                // Check for WebXR support
+                if (navigator.xr) {
+                    const supported = await navigator.xr.isSessionSupported('immersive-ar');
+                    setArSupported(supported);
+                    if (!supported) {
+                        console.log('WebXR AR not supported, checking for other AR modes');
+                    }
+                } else {
+                    console.log('WebXR not available, checking for other AR modes');
                 }
             } catch (error) {
                 console.error('AR support check failed:', error);
-                setArSupported(false);
-                setArError('Failed to check AR support');
+                // Don't set arSupported to false here, as we might still have other AR modes
             }
         };
         checkAR();
@@ -68,16 +81,25 @@ const Configurator = () => {
             if (modelViewer) {
                 const handleLoad = () => {
                     console.log('Model loaded successfully');
-                    // Force AR button to be visible
-                    modelViewer.arButton = modelViewer.arButton || {};
-                    modelViewer.arButton.style.display = 'block';
                     
+                    // Force AR button to be visible
+                    const arButton = modelViewer.shadowRoot?.querySelector('#ar-button');
+                    if (arButton) {
+                        arButton.style.display = 'block';
+                        arButton.style.opacity = '1';
+                        arButton.style.visibility = 'visible';
+                        arButton.style.position = 'fixed';
+                        arButton.style.bottom = '20px';
+                        arButton.style.right = '20px';
+                        arButton.style.zIndex = '1006';
+                    }
+
                     // Check if AR is supported
                     if (modelViewer.canActivateAR) {
                         console.log('AR is supported on this device');
                     } else {
                         console.log('AR is not supported on this device');
-                        setArError('AR is not supported on this device');
+                        // Don't set error here, as we might still have other AR modes
                     }
                 };
 
@@ -465,7 +487,7 @@ const Configurator = () => {
                         ar-button
                         ar-scale="fixed"
                         ar-placement="floor"
-                        ar-button-style="basic"
+                        ar-button-style="default"
                         ar-button-position="bottom-right"
                         ar-button-scale="1"
                         ar-button-visibility="always"
@@ -487,19 +509,56 @@ const Configurator = () => {
                     <style>
                         {`
                             model-viewer {
-                                --ar-button-background: #4CAF50;
+                                --ar-button-background: #FF69B4;
                                 --ar-button-border-radius: 50%;
                                 --ar-button-color: white;
                                 --ar-button-shadow: 0 4px 12px rgba(0,0,0,0.2);
                             }
-                            model-viewer::part(ar-button) {
-                                background-color: #4CAF50 !important;
+                            model-viewer::part(default-ar-button),
+                            model-viewer::part(ar-button),
+                            #ar-button {
+                                background-color: #FF69B4 !important;
                                 border-radius: 50% !important;
                                 box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
                                 position: fixed !important;
                                 bottom: 20px !important;
                                 right: 20px !important;
                                 z-index: 1006 !important;
+                                display: block !important;
+                                opacity: 1 !important;
+                                visibility: visible !important;
+                                pointer-events: auto !important;
+                                width: 48px !important;
+                                height: 48px !important;
+                                padding: 0 !important;
+                                margin: 0 !important;
+                            }
+                            model-viewer::part(default-ar-button)::before,
+                            model-viewer::part(ar-button)::before,
+                            #ar-button::before {
+                                content: '' !important;
+                                display: block !important;
+                                width: 24px !important;
+                                height: 24px !important;
+                                background-size: contain !important;
+                                background-repeat: no-repeat !important;
+                                background-position: center !important;
+                                position: absolute !important;
+                                top: 50% !important;
+                                left: 50% !important;
+                                transform: translate(-50%, -50%) !important;
+                            }
+                            model-viewer::part(default-ar-button):hover,
+                            model-viewer::part(ar-button):hover,
+                            #ar-button:hover {
+                                background-color: #FF1493 !important;
+                                transform: scale(1.1) !important;
+                                transition: all 0.3s ease !important;
+                            }
+                            model-viewer::part(default-ar-button):active,
+                            model-viewer::part(ar-button):active,
+                            #ar-button:active {
+                                transform: scale(0.95) !important;
                             }
                         `}
                     </style>
