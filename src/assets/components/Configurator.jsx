@@ -12,11 +12,21 @@ const balloonTypeOptions = [
     { name: 'Star', value: 'C' }
 ];
 
+const backgroundOptions = [
+    { name: 'Default', value: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' },
+    { name: 'Sunset', value: 'linear-gradient(135deg, #ff6b6b 0%, #feca57 100%)' },
+    { name: 'Ocean', value: 'linear-gradient(135deg, #48c6ef 0%, #6f86d6 100%)' },
+    { name: 'Forest', value: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
+    { name: 'Lavender', value: 'linear-gradient(135deg, #e6b980 0%, #eacda3 100%)' },
+    { name: 'Rose', value: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)' }
+];
+
 const Configurator = () => {
     const [showAR, setShowAR] = useState(false);
     const [modelBlobUrl, setModelBlobUrl] = useState(null);
     const [arSupported, setArSupported] = useState(false);
     const [arError, setArError] = useState(null);
+    const [selectedBackground, setSelectedBackground] = useState(backgroundOptions[0].value);
     const { 
         selectedBalloon,
         setSelectedBalloon,
@@ -34,7 +44,25 @@ const Configurator = () => {
     } = useCustomization();
     const [isLoading, setIsLoading] = useState(false);
     const sceneRef = useRef();
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const [isMobileView, setIsMobileView] = useState(false);
+    const [showUI, setShowUI] = useState(true);
+
+    // Add useEffect for responsive detection
+    useEffect(() => {
+        const checkMobile = () => {
+            const isMobile = window.innerWidth <= 768;
+            setIsMobileView(isMobile);
+        };
+
+        // Initial check
+        checkMobile();
+
+        // Add event listener for window resize
+        window.addEventListener('resize', checkMobile);
+
+        // Cleanup
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     // Check AR support on component mount
     useEffect(() => {
@@ -162,13 +190,27 @@ const Configurator = () => {
 
     return (
         <>
+            <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                background: selectedBackground,
+                transition: 'background 0.3s ease',
+                zIndex: 0
+            }} />
             <Canvas
                 camera={{ position: [0, 1, 4], fov: 75 }}
                 shadows
+                style={{
+                    position: 'relative',
+                    zIndex: 1
+                }}
             >
                 <ambientLight intensity={0.8} />
                 <directionalLight position={[5, 5, 5]} intensity={1} castShadow />
-                <Environment preset="sunset" />
+                <Environment preset={selectedEnvironment} />
                 
                 <group position={[0, -2, 0]} ref={sceneRef}>
                     <Suspense fallback={null}>
@@ -189,30 +231,31 @@ const Configurator = () => {
                 <>
                     <div className="configurator-container" style={{
                         position: 'fixed',
-                        top: '20px',
-                        left: '20px',
+                        top: isMobileView ? '60px' : '20px',
+                        left: isMobileView && !showUI ? '-160px' : '20px',
                         zIndex: 1001,
                         backgroundColor: 'rgba(255, 255, 255, 0.7)',
                         backdropFilter: 'blur(20px)',
                         WebkitBackdropFilter: 'blur(20px)',
                         color: '#1C1B1F',
-                        padding: '20px',
+                        padding: isMobileView ? '10px' : '20px',
                         borderRadius: '16px',
                         boxShadow: '0 4px 24px rgba(0, 0, 0, 0.1)',
-                        maxWidth: '300px',
+                        width: isMobileView ? '140px' : '300px',
                         maxHeight: '90vh',
                         overflowY: 'auto',
-                        border: '1px solid rgba(255, 255, 255, 0.3)'
+                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                        transition: 'all 0.3s ease'
                     }}>
                         <div style={{
-                            marginBottom: '24px',
+                            marginBottom: isMobileView ? '10px' : '24px',
                             textAlign: 'center'
                         }}>
                             <h2 style={{
                                 color: '#1C1B1F',
-                                fontSize: '28px',
+                                fontSize: isMobileView ? '14px' : '28px',
                                 fontWeight: '600',
-                                marginBottom: '8px',
+                                marginBottom: isMobileView ? '3px' : '8px',
                                 background: 'linear-gradient(135deg, #E91E63, #FF4081)',
                                 WebkitBackgroundClip: 'text',
                                 WebkitTextFillColor: 'transparent'
@@ -221,8 +264,8 @@ const Configurator = () => {
                             </h2>
                             <p style={{
                                 color: '#49454F',
-                                fontSize: '16px',
-                                lineHeight: '24px',
+                                fontSize: isMobileView ? '10px' : '16px',
+                                lineHeight: isMobileView ? '12px' : '24px',
                                 margin: 0
                             }}>
                                 Create your perfect balloon arrangement
@@ -232,44 +275,48 @@ const Configurator = () => {
                         <div style={{
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '24px'
+                            gap: isMobileView ? '10px' : '24px'
                         }}>
                             {/* Balloon Types Section */}
                             <div>
                                 <h3 style={{
                                     color: '#1C1B1F',
-                                    fontSize: '20px',
+                                    fontSize: isMobileView ? '11px' : '20px',
                                     fontWeight: '500',
-                                    marginBottom: '16px'
+                                    marginBottom: isMobileView ? '5px' : '16px'
                                 }}>
                                     Balloon Types
                                 </h3>
                                 <div style={{
                                     display: 'grid',
                                     gridTemplateColumns: 'repeat(2, 1fr)',
-                                    gap: '12px'
+                                    gap: isMobileView ? '5px' : '12px'
                                 }}>
                                     {balloonTypeOptions.map((type) => (
                                         <button
                                             key={type.value}
                                             onClick={() => toggleBalloonType(selectedBalloon || 'top', type.value)}
                                             style={{
-                                                padding: '12px',
-                                                borderRadius: '16px',
+                                                padding: isMobileView ? '5px 3px' : '12px',
+                                                borderRadius: '6px',
                                                 background: balloonTypes[selectedBalloon || 'top'] === type.value ? '#E91E63' : 'rgba(255, 255, 255, 0.8)',
                                                 color: balloonTypes[selectedBalloon || 'top'] === type.value ? 'white' : '#1C1B1F',
                                                 cursor: 'pointer',
-                                                fontSize: '16px',
+                                                fontSize: isMobileView ? '10px' : '16px',
                                                 fontWeight: '500',
                                                 transition: 'all 0.2s ease',
                                                 backdropFilter: 'blur(10px)',
                                                 WebkitBackdropFilter: 'blur(10px)',
                                                 border: balloonTypes[selectedBalloon || 'top'] === type.value ? 
-                                                        '2px solid #E91E63' : 
+                                                        '1px solid #E91E63' : 
                                                         '1px solid rgba(255, 255, 255, 0.2)',
                                                 boxShadow: balloonTypes[selectedBalloon || 'top'] === type.value ? 
-                                                        '0 4px 12px rgba(233, 30, 99, 0.2)' : 
-                                                        '0 2px 8px rgba(0, 0, 0, 0.05)'
+                                                        '0 2px 6px rgba(233, 30, 99, 0.2)' : 
+                                                        '0 1px 3px rgba(0, 0, 0, 0.05)',
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                minWidth: 0
                                             }}
                                         >
                                             {type.name}
@@ -282,42 +329,54 @@ const Configurator = () => {
                             <div>
                                 <h3 style={{
                                     color: '#1C1B1F',
-                                    fontSize: '20px',
+                                    fontSize: isMobileView ? '11px' : '20px',
                                     fontWeight: '500',
-                                    marginBottom: '16px'
+                                    marginBottom: isMobileView ? '5px' : '16px'
                                 }}>
                                     Colors
                                 </h3>
                                 <div style={{
                                     display: 'grid',
                                     gridTemplateColumns: 'repeat(4, 1fr)',
-                                    gap: '12px'
+                                    gap: isMobileView ? '5px' : '12px',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    width: '100%'
                                 }}>
                                     {colorOptions.map((color) => (
                                         <button
                                             key={color.name}
                                             onClick={() => setColor(selectedBalloon || 'top', color.value)}
                                             style={{
-                                                width: '36px',
-                                                height: '36px',
+                                                width: isMobileView ? '20px' : '36px',
+                                                height: isMobileView ? '20px' : '36px',
+                                                minWidth: isMobileView ? '20px' : '36px',
+                                                minHeight: isMobileView ? '20px' : '36px',
+                                                maxWidth: isMobileView ? '20px' : '36px',
+                                                maxHeight: isMobileView ? '20px' : '36px',
                                                 borderRadius: '50%',
                                                 border: 'none',
                                                 background: color.value,
                                                 cursor: 'pointer',
                                                 transition: 'all 0.2s ease',
-                                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                                                position: 'relative'
+                                                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                                                position: 'relative',
+                                                margin: '0 auto',
+                                                padding: 0,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
                                             }}
                                         >
                                             {balloonColors[selectedBalloon || 'top'] === color.value && (
                                                 <div style={{
                                                     position: 'absolute',
-                                                    top: '-4px',
-                                                    left: '-4px',
-                                                    right: '-4px',
-                                                    bottom: '-4px',
+                                                    top: '-1px',
+                                                    left: '-1px',
+                                                    right: '-1px',
+                                                    bottom: '-1px',
                                                     borderRadius: '50%',
-                                                    border: '2px solid #E91E63',
+                                                    border: '1px solid #E91E63',
                                                     animation: 'pulse 2s infinite'
                                                 }} />
                                             )}
@@ -330,41 +389,93 @@ const Configurator = () => {
                             <div>
                                 <h3 style={{
                                     color: '#1C1B1F',
-                                    fontSize: '20px',
+                                    fontSize: isMobileView ? '11px' : '20px',
                                     fontWeight: '500',
-                                    marginBottom: '16px'
+                                    marginBottom: isMobileView ? '5px' : '16px'
                                 }}>
                                     Materials
                                 </h3>
                                 <div style={{
                                     display: 'grid',
                                     gridTemplateColumns: 'repeat(2, 1fr)',
-                                    gap: '12px'
+                                    gap: isMobileView ? '5px' : '12px'
                                 }}>
                                     {materialOptions.map((material) => (
                                         <button
                                             key={material.value}
                                             onClick={() => setMaterial(selectedBalloon || 'top', material.value)}
                                             style={{
-                                                padding: '12px',
-                                                borderRadius: '16px',
+                                                padding: isMobileView ? '5px 3px' : '12px',
+                                                borderRadius: '6px',
                                                 background: balloonMaterials[selectedBalloon || 'top'] === material.value ? '#E91E63' : 'rgba(255, 255, 255, 0.8)',
                                                 color: balloonMaterials[selectedBalloon || 'top'] === material.value ? 'white' : '#1C1B1F',
                                                 cursor: 'pointer',
-                                                fontSize: '16px',
+                                                fontSize: isMobileView ? '10px' : '16px',
                                                 fontWeight: '500',
                                                 transition: 'all 0.2s ease',
                                                 backdropFilter: 'blur(10px)',
                                                 WebkitBackdropFilter: 'blur(10px)',
                                                 border: balloonMaterials[selectedBalloon || 'top'] === material.value ? 
-                                                        '2px solid #E91E63' : 
+                                                        '1px solid #E91E63' : 
                                                         '1px solid rgba(255, 255, 255, 0.2)',
                                                 boxShadow: balloonMaterials[selectedBalloon || 'top'] === material.value ? 
-                                                        '0 4px 12px rgba(233, 30, 99, 0.2)' : 
-                                                        '0 2px 8px rgba(0, 0, 0, 0.05)'
+                                                        '0 2px 6px rgba(233, 30, 99, 0.2)' : 
+                                                        '0 1px 3px rgba(0, 0, 0, 0.05)',
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                minWidth: 0
                                             }}
                                         >
                                             {material.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Background Colors Section */}
+                            <div>
+                                <h3 style={{
+                                    color: '#1C1B1F',
+                                    fontSize: isMobileView ? '11px' : '20px',
+                                    fontWeight: '500',
+                                    marginBottom: isMobileView ? '5px' : '16px'
+                                }}>
+                                    Background
+                                </h3>
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(2, 1fr)',
+                                    gap: isMobileView ? '5px' : '12px'
+                                }}>
+                                    {backgroundOptions.map((bg) => (
+                                        <button
+                                            key={bg.name}
+                                            onClick={() => setSelectedBackground(bg.value)}
+                                            style={{
+                                                padding: isMobileView ? '5px 3px' : '12px',
+                                                borderRadius: '6px',
+                                                background: selectedBackground === bg.value ? '#E91E63' : 'rgba(255, 255, 255, 0.8)',
+                                                color: selectedBackground === bg.value ? 'white' : '#1C1B1F',
+                                                cursor: 'pointer',
+                                                fontSize: isMobileView ? '10px' : '16px',
+                                                fontWeight: '500',
+                                                transition: 'all 0.2s ease',
+                                                backdropFilter: 'blur(10px)',
+                                                WebkitBackdropFilter: 'blur(10px)',
+                                                border: selectedBackground === bg.value ? 
+                                                        '1px solid #E91E63' : 
+                                                        '1px solid rgba(255, 255, 255, 0.2)',
+                                                boxShadow: selectedBackground === bg.value ? 
+                                                        '0 2px 6px rgba(233, 30, 99, 0.2)' : 
+                                                        '0 1px 3px rgba(0, 0, 0, 0.05)',
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                minWidth: 0
+                                            }}
+                                        >
+                                            {bg.name}
                                         </button>
                                     ))}
                                 </div>
