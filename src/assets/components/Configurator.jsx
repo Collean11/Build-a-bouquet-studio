@@ -414,108 +414,123 @@ const Configurator = () => {
             id: 'balloon-type',
             title: 'Balloon Type',
             icon: '🎯',
-            content: ({ balloonTypes, toggleBalloonType, selectedBalloon, balloonTypeOptions }) => (
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(2, 1fr)',
-                    gap: '8px',
-                    width: '100%'
-                }}>
-                    {balloonTypeOptions.map((type) => (
-                        <button
-                            key={type.value}
-                            onClick={() => toggleBalloonType(selectedBalloon || 'top', type.value)}
-                            style={{
-                                padding: '8px',
-                                borderRadius: '8px',
-                                background: balloonTypes[selectedBalloon || 'top'] === type.value ? '#E91E63' : 'rgba(255, 255, 255, 0.8)',
-                                color: balloonTypes[selectedBalloon || 'top'] === type.value ? 'white' : '#1C1B1F',
-                                cursor: 'pointer',
-                                fontSize: '14px',
-                                fontWeight: '500',
-                                transition: 'all 0.2s ease',
-                                border: balloonTypes[selectedBalloon || 'top'] === type.value ? '2px solid #E91E63' : '1px solid rgba(255, 255, 255, 0.2)',
-                                boxShadow: balloonTypes[selectedBalloon || 'top'] === type.value ? '0 4px 12px rgba(233, 30, 99, 0.3)' : '0 2px 4px rgba(0,0,0,0.1)'
-                            }}
-                        >
-                            {type.name}
-                        </button>
-                    ))}
-                </div>
-            )
+            content: ({ balloonTypes, toggleBalloonType, selectedBalloon, balloonTypeOptions }) => {
+                const typeContent = (
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, 1fr)',
+                        gap: '8px',
+                        width: '100%'
+                    }}>
+                        {balloonTypeOptions.map((type) => (
+                            <button
+                                key={type.value}
+                                onClick={() => toggleBalloonType(selectedBalloon || 'top', type.value)}
+                                style={{
+                                    padding: '8px',
+                                    borderRadius: '8px',
+                                    background: balloonTypes[selectedBalloon || 'top'] === type.value ? '#E91E63' : 'rgba(255, 255, 255, 0.8)',
+                                    color: balloonTypes[selectedBalloon || 'top'] === type.value ? 'white' : '#1C1B1F',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    fontWeight: '500',
+                                    transition: 'all 0.2s ease',
+                                    border: balloonTypes[selectedBalloon || 'top'] === type.value ? '2px solid #E91E63' : '1px solid rgba(255, 255, 255, 0.2)',
+                                    boxShadow: balloonTypes[selectedBalloon || 'top'] === type.value ? '0 4px 12px rgba(233, 30, 99, 0.3)' : '0 2px 4px rgba(0,0,0,0.1)'
+                                }}
+                            >
+                                {type.name}
+                            </button>
+                        ))}
+                    </div>
+                );
+
+                return (
+                    // Wrap the type content in the scrollable div
+                    <div style={{
+                        overflowY: 'auto',
+                        maxHeight: isMobileView ? '100px' : '150px',
+                        paddingRight: '5px'
+                    }}>
+                        {typeContent}
+                    </div>
+                );
+            }
         },
         {
             id: 'colors',
             title: 'Colors',
             icon: '🎨',
-            content: ({ balloonColors, setColor, selectedBalloon, colorOptions }) => (
-                <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '12px',
-                    width: '100%'
-                }}>
-                    {['Pastel', 'Rich', 'Classic', 'Vibrant', 'Metallic'].map((category, categoryIndex) => (
-                        <div key={category} style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '6px',
-                            width: '100%'
-                        }}>
-                            <h4 style={{
-                                fontSize: '12px',
-                                color: '#666',
-                                marginBottom: '6px'
-                            }}>{category}</h4>
-                            <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(6, 1fr)',
-                                gap: '8px',
-                                width: '100%',
-                                justifyItems: 'center',
-                                alignItems: 'center'
+            content: ({ balloonColors, setColor, selectedBalloon, colorOptions }) => {
+                const colorContent = (
+                    <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px',
+                        width: '100%'
+                    }}>
+                        {['Pastel', 'Rich', 'Classic', 'Vibrant', 'Metallic'].map((category, categoryIndex) => (
+                            <div key={category} style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '6px',
+                                width: '100%'
                             }}>
-                                {colorOptions.slice(categoryIndex * 6, (categoryIndex + 1) * 6).map((color) => (
-                                    <button
-                                        key={color.name}
-                                        onClick={() => setColor(selectedBalloon || 'top', color.value)}
-                                        style={{
-                                            boxSizing: 'border-box',
-                                            width: '24px',
-                                            height: '24px',
-                                            minWidth: '24px',
-                                            minHeight: '24px',
-                                            maxWidth: '24px',
-                                            maxHeight: '24px',
-                                            padding: 0,
-                                            borderRadius: '50%',
-                                            border: 'none',
-                                            background: color.value,
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s ease',
-                                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                                            position: 'relative'
-                                        }}
-                                    >
-                                        {balloonColors[selectedBalloon || 'top'] === color.value && (
-                                            <div style={{
-                                                position: 'absolute',
-                                                top: '-1px',
-                                                left: '-1px',
-                                                right: '-1px',
-                                                bottom: '-1px',
+                                <h4 style={{
+                                    fontSize: '12px',
+                                    color: '#666',
+                                    marginBottom: '6px'
+                                }}>{category}</h4>
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(auto-fill, minmax(32px, 1fr))',
+                                    gap: '8px',
+                                    justifyItems: 'center',
+                                    alignItems: 'center'
+                                }}>
+                                    {colorOptions.slice(categoryIndex * 6, (categoryIndex + 1) * 6).map((color) => (
+                                        <button
+                                            key={color.name}
+                                            onClick={() => setColor(selectedBalloon || 'top', color.value)}
+                                            style={{
+                                                boxSizing: 'border-box',
+                                                width: '32px',
+                                                height: '32px',
+                                                minWidth: '32px',
+                                                minHeight: '32px',
+                                                maxWidth: '32px',
+                                                maxHeight: '32px',
+                                                padding: 0,
                                                 borderRadius: '50%',
-                                                border: '1px solid #E91E63',
-                                                animation: 'pulse 2s infinite'
-                                            }} />
-                                        )}
-                                    </button>
-                                ))}
+                                                border: 'none',
+                                                background: color.value,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s ease',
+                                                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                                                position: 'relative'
+                                            }}
+                                        >
+                                            {balloonColors[selectedBalloon || 'top'] === color.value && (
+                                                <div style={{ position: 'absolute', top: '-1px', left: '-1px', right: '-1px', bottom: '-1px', borderRadius: '50%', border: '1px solid #E91E63', animation: 'pulse 2s infinite' }} />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
-            )
+                        ))}
+                    </div>
+                );
+                
+                return (
+                    <div style={{
+                        overflowY: 'auto',
+                        maxHeight: isMobileView ? '100px' : '150px',
+                        paddingRight: '5px'
+                    }}>
+                        {colorContent}
+                    </div>
+                );
+            }
         },
         {
             id: 'materials',
@@ -555,52 +570,65 @@ const Configurator = () => {
             id: 'background',
             title: 'Background',
             icon: '🌈',
-            content: ({ backgroundOptions, selectedBackground, setSelectedBackground }) => (
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(2, 1fr)',
-                    gap: '6px',
-                    width: '100%'
-                }}>
-                    {backgroundOptions.map((bg) => (
-                        <button
-                            key={bg.name}
-                            onClick={() => setSelectedBackground(bg.value)}
-                            style={{
-                                aspectRatio: '1',
-                                borderRadius: '8px',
-                                background: bg.value,
-                                border: selectedBackground === bg.value ? '2px solid #E91E63' : '2px solid rgba(255, 255, 255, 0.8)',
-                                boxShadow: selectedBackground === bg.value ? '0 4px 12px rgba(233, 30, 99, 0.3)' : '0 2px 4px rgba(0,0,0,0.1)',
-                                transform: selectedBackground === bg.value ? 'scale(1.05)' : 'scale(1)',
-                                transition: 'all 0.3s ease',
-                                position: 'relative',
-                                cursor: 'pointer',
-                                padding: 0,
-                                width: '100%'
-                            }}
-                        >
-                            <span style={{
-                                position: 'absolute',
-                                bottom: 0,
-                                left: 0,
-                                right: 0,
-                                padding: '4px',
-                                background: 'rgba(0, 0, 0, 0.6)',
-                                color: 'white',
-                                fontSize: '10px',
-                                textAlign: 'center',
-                                backdropFilter: 'blur(4px)',
-                                WebkitBackdropFilter: 'blur(4px)',
-                                borderBottomLeftRadius: '6px',
-                                borderBottomRightRadius: '6px'
-                            }}>
-                                {bg.name}
-                            </span>
-                        </button>
-                    ))}
-                </div>
-            )
+            content: ({ backgroundOptions, selectedBackground, setSelectedBackground }) => {
+                const backgroundGrid = (
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, 1fr)',
+                        gap: '6px',
+                        width: '100%'
+                    }}>
+                        {backgroundOptions.map((bg) => (
+                            <button
+                                key={bg.name}
+                                onClick={() => setSelectedBackground(bg.value)}
+                                style={{
+                                    aspectRatio: '1',
+                                    borderRadius: '8px',
+                                    background: bg.value,
+                                    border: selectedBackground === bg.value ? '2px solid #E91E63' : '2px solid rgba(255, 255, 255, 0.8)',
+                                    boxShadow: selectedBackground === bg.value ? '0 4px 12px rgba(233, 30, 99, 0.3)' : '0 2px 4px rgba(0,0,0,0.1)',
+                                    transform: selectedBackground === bg.value ? 'scale(1.05)' : 'scale(1)',
+                                    transition: 'all 0.3s ease',
+                                    position: 'relative',
+                                    cursor: 'pointer',
+                                    padding: 0,
+                                    width: '100%'
+                                }}
+                            >
+                                <span style={{
+                                    position: 'absolute',
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    padding: '4px',
+                                    background: 'rgba(0, 0, 0, 0.6)',
+                                    color: 'white',
+                                    fontSize: '10px',
+                                    textAlign: 'center',
+                                    backdropFilter: 'blur(4px)',
+                                    WebkitBackdropFilter: 'blur(4px)',
+                                    borderBottomLeftRadius: '6px',
+                                    borderBottomRightRadius: '6px'
+                                }}>
+                                    {bg.name}
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                );
+
+                return (
+                    // Wrap the grid in the scrollable div
+                    <div style={{
+                        overflowY: 'auto',
+                        maxHeight: isMobileView ? '80px' : '150px',
+                        paddingRight: '5px'
+                    }}>
+                        {backgroundGrid}
+                    </div>
+                );
+            }
         }
     ];
 
@@ -973,7 +1001,6 @@ const Configurator = () => {
                             border: 'none',
                             cursor: 'pointer',
                             fontSize: '24px',
-                            lineHeight: '1',
                             boxShadow: '0 4px 12px rgba(233, 30, 99, 0.3)',
                             transition: 'all 0.2s ease',
                             display: 'flex',
@@ -982,9 +1009,9 @@ const Configurator = () => {
                             backdropFilter: 'blur(10px)',
                             WebkitBackdropFilter: 'blur(10px)',
                             padding: 0,
+                            paddingBottom: '4px',
                             margin: 0,
-                            textAlign: 'center',
-                            verticalAlign: 'middle'
+                            boxSizing: 'border-box'
                         }}
                         onMouseEnter={(e) => {
                             e.currentTarget.style.transform = 'scale(1.1)';
@@ -995,15 +1022,7 @@ const Configurator = () => {
                             e.currentTarget.style.boxShadow = '0 4px 12px rgba(233, 30, 99, 0.3)';
                         }}
                     >
-                        <span style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: '100%',
-                            height: '100%'
-                        }}>
-                            {showUI ? '×' : '☰'}
-                        </span>
+                        {showUI ? '×' : '☰'}
                     </button>
 
                     {/* Help Button */}
@@ -1027,7 +1046,6 @@ const Configurator = () => {
                             border: 'none',
                             cursor: 'pointer',
                             fontSize: '24px',
-                            lineHeight: '1',
                             boxShadow: '0 4px 12px rgba(233, 30, 99, 0.3)',
                             transition: 'all 0.2s ease',
                             display: 'flex',
@@ -1036,9 +1054,9 @@ const Configurator = () => {
                             backdropFilter: 'blur(10px)',
                             WebkitBackdropFilter: 'blur(10px)',
                             padding: 0,
+                            paddingBottom: '3px',
                             margin: 0,
-                            textAlign: 'center',
-                            verticalAlign: 'middle'
+                            boxSizing: 'border-box'
                         }}
                         onMouseEnter={(e) => {
                             e.currentTarget.style.transform = 'scale(1.1)';
@@ -1049,15 +1067,7 @@ const Configurator = () => {
                             e.currentTarget.style.boxShadow = '0 4px 12px rgba(233, 30, 99, 0.3)';
                         }}
                     >
-                        <span style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: '100%',
-                            height: '100%'
-                        }}>
-                            ?
-                        </span>
+                        ?
                     </button>
 
                     {/* AR Button */}
@@ -1113,7 +1123,7 @@ const Configurator = () => {
                                 right: '60px',
                                 top: 'auto',
                                 width: 'auto',
-                                maxHeight: '20vh',
+                                maxHeight: '30vh',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 overflow: 'hidden',
@@ -1165,26 +1175,79 @@ const Configurator = () => {
                             </div>
 
                             {isMobileView ? (
-                                <div 
-                                    ref={carouselRef}
-                                    onTouchStart={handleTouchStart}
-                                    onTouchMove={handleTouchMove}
-                                    onTouchEnd={handleTouchEnd}
-                                    style={{
+                                // --- Mobile View (Card Carousel Implementation) ---
+                                <div style={{ // Main container for mobile cards + nav
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    height: '100%', // Use full available height
+                                    width: '100%'
+                                }}>
+                                    {/* Mobile Navigation Controls (Smaller) */}
+                                    <div style={{
                                         display: 'flex',
-                                        flexDirection: 'column',
-                                        width: '100%',
-                                        height: '100%',
-                                        position: 'relative',
-                                        overflow: 'hidden'
-                                    }}
-                                >
-                                    {/* Mobile Carousel Indicators */}
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        padding: '4px 8px', // Reduced padding
+                                        borderBottom: '1px solid rgba(0,0,0,0.1)',
+                                        flexShrink: 0
+                                    }}>
+                                        <button 
+                                            onClick={() => setCurrentCardIndex(prev => Math.max(0, prev - 1))}
+                                            disabled={currentCardIndex === 0}
+                                            style={{ /* Adapted styles for mobile */
+                                                background: 'transparent',
+                                                border: 'none',
+                                                borderRadius: '50%',
+                                                width: '28px',
+                                                height: '28px',
+                                                padding: 0,
+                                                boxSizing: 'border-box',
+                                                cursor: 'pointer',
+                                                fontSize: '16px',
+                                                textAlign: 'center',
+                                                color: '#333',
+                                                opacity: currentCardIndex === 0 ? 0.5 : 1,
+                                                transition: 'background 0.2s ease'
+                                            }}
+                                            onMouseEnter={(e) => { if (currentCardIndex !== 0) e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)'; }}
+                                            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                                        >
+                                            {'<'}
+                                        </button>
+                                        <h3 style={{ margin: 0, fontSize: '14px', textAlign: 'center', flexGrow: 1 }}>
+                                            {carouselCards[currentCardIndex].title}
+                                        </h3>
+                                        <button 
+                                            onClick={() => setCurrentCardIndex(prev => Math.min(carouselCards.length - 1, prev + 1))}
+                                            disabled={currentCardIndex === carouselCards.length - 1}
+                                            style={{ /* Adapted styles for mobile */
+                                                background: 'transparent',
+                                                border: 'none',
+                                                borderRadius: '50%',
+                                                width: '28px',
+                                                height: '28px',
+                                                padding: 0,
+                                                boxSizing: 'border-box',
+                                                cursor: 'pointer',
+                                                fontSize: '16px',
+                                                textAlign: 'center',
+                                                color: '#333',
+                                                opacity: currentCardIndex === carouselCards.length - 1 ? 0.5 : 1,
+                                                transition: 'background 0.2s ease'
+                                            }}
+                                            onMouseEnter={(e) => { if (currentCardIndex !== carouselCards.length - 1) e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)'; }}
+                                            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                                        >
+                                            {'>'}
+                                        </button>
+                                    </div>
+
+                                    {/* Dot Indicators (Mobile - Small) */}
                                     <div style={{
                                         display: 'flex',
                                         justifyContent: 'center',
                                         gap: '4px',
-                                        padding: '4px',
+                                        padding: '6px 0', // Adjusted padding
                                         flexShrink: 0
                                     }}>
                                         {carouselCards.map((card, index) => (
@@ -1192,254 +1255,171 @@ const Configurator = () => {
                                                 key={card.id}
                                                 onClick={() => setCurrentCardIndex(index)}
                                                 style={{
-                                                    width: '4px',
-                                                    height: '4px',
+                                                    width: '6px',
+                                                    height: '6px',
                                                     borderRadius: '50%',
                                                     background: currentCardIndex === index ? '#E91E63' : 'rgba(0, 0, 0, 0.2)',
                                                     transition: 'all 0.3s ease',
                                                     border: 'none',
                                                     padding: 0,
                                                     cursor: 'pointer',
-                                                    margin: '0 2px'
+                                                    margin: '0 3px' 
                                                 }}
+                                                aria-label={`Go to card ${index + 1}`}
                                             />
                                         ))}
                                     </div>
-                                    {/* Mobile Carousel Content Area */}
+
+                                    {/* Active Card Content Area (Scrollable - Mobile) */}
                                     <div style={{
-                                        flex: 1,
-                                        overflowY: 'auto',
-                                        padding: '8px',
-                                        minHeight: 0,
-                                        WebkitOverflowScrolling: 'touch',
-                                        scrollbarWidth: 'none',
+                                        flex: 1, // Take remaining space
+                                        overflowY: 'auto', // Allow content to scroll
+                                        padding: '8px', // Mobile padding
+                                        width: '100%',
+                                        boxSizing: 'border-box',
+                                        WebkitOverflowScrolling: 'touch', // Keep smooth scroll for touch
+                                        scrollbarWidth: 'none', // Hide scrollbar
                                         msOverflowStyle: 'none',
-                                        WebkitScrollbar: { display: 'none' },
-                                        touchAction: 'pan-y',
-                                        height: '100%',
-                                        position: 'relative',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        overflow: 'auto',
-                                        maxHeight: 'calc(100% - 40px)',
-                                        overscrollBehavior: 'contain'
+                                        '&::-webkit-scrollbar': { display: 'none' } // Hide scrollbar (webkit)
                                     }}>
-                                        {/* Mobile Card Slider */}
-                                        <div style={{
-                                            display: 'flex',
-                                            width: '100%',
-                                            transform: `translateX(-${currentCardIndex * 100}%)`,
-                                            transition: 'transform 0.3s ease-out',
-                                            height: '100%'
-                                        }}>
-                                            {carouselCards.map((card, index) => (
-                                                <div
-                                                    key={card.id}
-                                                    style={{
-                                                        width: '100%',
-                                                        height: '100%',
-                                                        flexShrink: 0,
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        overflow: 'hidden'
-                                                    }}
-                                                >
-                                                    {/* Mobile Card Structure */}
-                                                    <div style={{
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        width: '100%',
-                                                        height: '100%'
-                                                    }}>
-                                                        {/* Mobile Card Header */}
-                                                        <div style={{
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '4px',
-                                                            padding: '8px',
-                                                            background: 'rgba(255, 255, 255, 0.7)',
-                                                            flexShrink: 0
-                                                        }}>
-                                                            <span style={{ fontSize: '20px', animation: 'bounce 2s infinite' }}>{card.icon}</span>
-                                                            <h3 style={{ color: '#1C1B1F', fontSize: '12px', fontWeight: '500', margin: 0 }}>
-                                                                {card.title}
-                                                            </h3>
-                                                        </div>
-                                                        {/* Mobile Card Content Scroll Area */}
-                                                        <div style={{
-                                                            flex: 1,
-                                                            overflowY: 'auto',
-                                                            padding: '8px',
-                                                            minHeight: 0,
-                                                            WebkitOverflowScrolling: 'touch',
-                                                            scrollbarWidth: 'none',
-                                                            msOverflowStyle: 'none',
-                                                            WebkitScrollbar: { display: 'none' },
-                                                            touchAction: 'pan-y',
-                                                            height: '100%',
-                                                            position: 'relative',
-                                                            display: 'flex',
-                                                            flexDirection: 'column',
-                                                            overflow: 'auto',
-                                                            maxHeight: 'calc(100% - 40px)',
-                                                            overscrollBehavior: 'contain'
-                                                        }}>
-                                                            {/* Mobile Card Content Wrapper */}
-                                                            <div style={{
-                                                                display: 'flex',
-                                                                flexDirection: 'column',
-                                                                gap: '8px',
-                                                                width: '100%',
-                                                                minWidth: 'min-content' // Prevent squishing
-                                                            }}>
-                                                                {/* Render Card Content */}
-                                                                {card.content({
-                                                                    selectedBalloon, setSelectedBalloon, balloonTypes, toggleBalloonType,
-                                                                    balloonColors, setColor, balloonMaterials, setMaterial, colorOptions,
-                                                                    materialOptions, balloonTypeOptions, backgroundOptions,
-                                                                    selectedBackground, setSelectedBackground, balloonPositions
-                                                                })}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        {/* Render only the current card's content */}
+                                        {carouselCards[currentCardIndex].content({
+                                            selectedBalloon, setSelectedBalloon, balloonTypes, toggleBalloonType,
+                                            balloonColors, setColor, balloonMaterials, setMaterial, colorOptions,
+                                            materialOptions, balloonTypeOptions, backgroundOptions,
+                                            selectedBackground, setSelectedBackground, balloonPositions
+                                        })}
                                     </div>
                                 </div>
                             ) : (
+                                // --- Desktop View --- 
+                                // Add parent div to manage height distribution
                                 <div style={{
-                                    flex: 1,
-                                    overflowY: 'auto',
-                                    paddingRight: '10px',
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    gap: '24px'
+                                    height: '100%', // Fill the outer container's height
+                                    width: '100%'
                                 }}>
-                                    {/* Balloon Selection Section */}
-                                    <div>
-                                        <h3 style={{ color: '#1C1B1F', fontSize: '20px', fontWeight: '500', marginBottom: '16px' }}>
-                                            Select Balloon
+                                    {/* Desktop Navigation Controls */}
+                                    <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        padding: '10px 20px',
+                                        borderBottom: '1px solid rgba(0,0,0,0.1)',
+                                        flexShrink: 0 
+                                    }}>
+                                        <button 
+                                            onClick={() => setCurrentCardIndex(prev => Math.max(0, prev - 1))}
+                                            disabled={currentCardIndex === 0}
+                                            style={{
+                                                background: 'transparent',
+                                                border: 'none',
+                                                borderRadius: '50%',
+                                                width: '32px',
+                                                height: '32px',
+                                                padding: 0, 
+                                                boxSizing: 'border-box',
+                                                cursor: 'pointer',
+                                                position: 'relative',
+                                                opacity: currentCardIndex === 0 ? 0.3 : 1,
+                                                transition: 'background 0.2s ease',
+                                                outline: 'none'
+                                            }}
+                                            onMouseEnter={(e) => { if (currentCardIndex !== 0) e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)'; }}
+                                            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                                        >
+                                            <span style={{
+                                                position: 'absolute',
+                                                top: '50%',
+                                                left: '50%',
+                                                transform: 'translate(-50%, -55%)',
+                                                fontSize: '22px',
+                                                color: '#555'
+                                            }}>
+                                                {'‹'}
+                                            </span> 
+                                        </button>
+                                        <h3 style={{ margin: 0, fontSize: '18px', textAlign: 'center', flexGrow: 1 }}>
+                                            {carouselCards[currentCardIndex].title}
                                         </h3>
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', width: '100%' }}>
-                                            {balloonPositions.map((balloon) => (
-                                                <button
-                                                    key={balloon.id}
-                                                    onClick={() => { console.log('Selecting balloon:', balloon.id); setSelectedBalloon(balloon.id); }}
-                                                    style={{ padding: '8px', borderRadius: '8px', background: selectedBalloon === balloon.id ? '#E91E63' : 'rgba(255, 255, 255, 0.8)', color: selectedBalloon === balloon.id ? 'white' : '#1C1B1F', cursor: 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s ease', border: selectedBalloon === balloon.id ? '2px solid #E91E63' : '1px solid rgba(255, 255, 255, 0.2)', boxShadow: selectedBalloon === balloon.id ? '0 4px 12px rgba(233, 30, 99, 0.3)' : '0 2px 4px rgba(0,0,0,0.1)' }}
-                                                >
-                                                    {balloon.name}
-                                                </button>
-                                            ))}
-                                        </div>
+                                        <button 
+                                            onClick={() => setCurrentCardIndex(prev => Math.min(carouselCards.length - 1, prev + 1))}
+                                            disabled={currentCardIndex === carouselCards.length - 1}
+                                            style={{
+                                                background: 'transparent',
+                                                border: 'none',
+                                                borderRadius: '50%',
+                                                width: '32px',
+                                                height: '32px',
+                                                padding: 0, 
+                                                boxSizing: 'border-box',
+                                                cursor: 'pointer',
+                                                position: 'relative',
+                                                opacity: currentCardIndex === carouselCards.length - 1 ? 0.3 : 1, 
+                                                transition: 'background 0.2s ease',
+                                                outline: 'none'
+                                            }}
+                                            onMouseEnter={(e) => { if (currentCardIndex !== carouselCards.length - 1) e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)'; }}
+                                            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                                        >
+                                            <span style={{
+                                                position: 'absolute',
+                                                top: '50%',
+                                                left: '50%',
+                                                transform: 'translate(-50%, -55%)',
+                                                fontSize: '22px',
+                                                color: '#555'
+                                            }}>
+                                                {'›'}
+                                            </span> 
+                                        </button>
                                     </div>
 
-                                    {/* Balloon Types Section */}
-                                    <div>
-                                        <h3 style={{ color: '#1C1B1F', fontSize: '20px', fontWeight: '500', marginBottom: '16px' }}>
-                                            {`${balloonPositions.find(b => b.id === selectedBalloon)?.name || 'Balloon'} Type`}
-                                        </h3>
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', width: '100%' }}>
-                                            {balloonTypeOptions.map((type) => (
-                                                <button
-                                                    key={type.value}
-                                                    onClick={() => toggleBalloonType(selectedBalloon || 'top', type.value)}
-                                                    style={{ padding: '8px', borderRadius: '8px', background: balloonTypes[selectedBalloon || 'top'] === type.value ? '#E91E63' : 'rgba(255, 255, 255, 0.8)', color: balloonTypes[selectedBalloon || 'top'] === type.value ? 'white' : '#1C1B1F', cursor: 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s ease', border: balloonTypes[selectedBalloon || 'top'] === type.value ? '2px solid #E91E63' : '1px solid rgba(255, 255, 255, 0.2)', boxShadow: balloonTypes[selectedBalloon || 'top'] === type.value ? '0 4px 12px rgba(233, 30, 99, 0.3)' : '0 2px 4px rgba(0,0,0,0.1)' }}
-                                                >
-                                                    {type.name}
-                                                </button>
-                                            ))}
-                                        </div>
+                                    {/* Dot Indicators (Desktop) */}
+                                    <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        gap: '8px',
+                                        padding: '10px 0',
+                                        flexShrink: 0
+                                    }}>
+                                        {carouselCards.map((card, index) => (
+                                            <button
+                                                key={card.id}
+                                                onClick={() => setCurrentCardIndex(index)}
+                                                style={{
+                                                    width: '8px',
+                                                    height: '8px',
+                                                    borderRadius: '50%',
+                                                    background: currentCardIndex === index ? '#E91E63' : 'rgba(0, 0, 0, 0.2)',
+                                                    transition: 'all 0.3s ease',
+                                                    border: 'none',
+                                                    padding: 0,
+                                                    cursor: 'pointer',
+                                                    margin: '0 4px'
+                                                }}
+                                                aria-label={`Go to card ${index + 1}`}
+                                            />
+                                        ))}
                                     </div>
 
-                                    {/* Colors Section */}
-                                    <div>
-                                        <h3 style={{ color: '#1C1B1F', fontSize: '20px', fontWeight: '500', marginBottom: '16px' }}>
-                                            Colors
-                                        </h3>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
-                                            {['Pastel', 'Rich', 'Classic', 'Vibrant', 'Metallic'].map((category, categoryIndex) => (
-                                                <div key={category}>
-                                                    <h4 style={{ fontSize: '12px', color: '#666', marginBottom: '6px' }}>{category}</h4>
-                                                    <div style={{
-                                                        display: 'grid',
-                                                        gridTemplateColumns: 'repeat(6, 1fr)',
-                                                        gap: '8px',
-                                                        width: '100%',
-                                                        justifyItems: 'center',
-                                                        alignItems: 'center'
-                                                    }}>
-                                                        {colorOptions.slice(categoryIndex * 6, (categoryIndex + 1) * 6).map((color) => (
-                                                            <button
-                                                                key={color.name}
-                                                                onClick={() => setColor(selectedBalloon || 'top', color.value)}
-                                                                style={{
-                                                                    boxSizing: 'border-box',
-                                                                    width: '24px',
-                                                                    height: '24px',
-                                                                    minWidth: '24px',
-                                                                    minHeight: '24px',
-                                                                    maxWidth: '24px',
-                                                                    maxHeight: '24px',
-                                                                    padding: 0,
-                                                                    borderRadius: '50%',
-                                                                    border: 'none',
-                                                                    background: color.value,
-                                                                    cursor: 'pointer',
-                                                                    transition: 'all 0.2s ease',
-                                                                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                                                                    position: 'relative'
-                                                                }}
-                                                            >
-                                                                {balloonColors[selectedBalloon || 'top'] === color.value && (
-                                                                    <div style={{ position: 'absolute', top: '-1px', left: '-1px', right: '-1px', bottom: '-1px', borderRadius: '50%', border: '1px solid #E91E63', animation: 'pulse 2s infinite' }} />
-                                                                )}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
+                                    {/* Active Card Content Area (Scrollable) */}
+                                    <div style={{
+                                        flex: 1, // Takes remaining space within the new parent
+                                        overflowY: 'auto',
+                                        padding: '20px',
+                                        width: '100%',
+                                        boxSizing: 'border-box'
+                                    }}>
+                                        {carouselCards[currentCardIndex].content({
+                                            selectedBalloon, setSelectedBalloon, balloonTypes, toggleBalloonType,
+                                            balloonColors, setColor, balloonMaterials, setMaterial, colorOptions,
+                                            materialOptions, balloonTypeOptions, backgroundOptions,
+                                            selectedBackground, setSelectedBackground, balloonPositions
+                                        })}
                                     </div>
-
-                                    {/* Materials Section */}
-                                    <div>
-                                        <h3 style={{ color: '#1C1B1F', fontSize: '20px', fontWeight: '500', marginBottom: '16px' }}>
-                                            Materials
-                                        </h3>
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', width: '100%' }}>
-                                            {materialOptions.map((material) => (
-                                                <button
-                                                    key={material.value}
-                                                    onClick={() => setMaterial(selectedBalloon || 'top', material.value)}
-                                                    style={{ padding: '8px', borderRadius: '8px', background: balloonMaterials[selectedBalloon || 'top'] === material.value ? '#E91E63' : 'rgba(255, 255, 255, 0.8)', color: balloonMaterials[selectedBalloon || 'top'] === material.value ? 'white' : '#1C1B1F', cursor: 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s ease', border: balloonMaterials[selectedBalloon || 'top'] === material.value ? '2px solid #E91E63' : '1px solid rgba(255, 255, 255, 0.2)', boxShadow: balloonMaterials[selectedBalloon || 'top'] === material.value ? '0 4px 12px rgba(233, 30, 99, 0.3)' : '0 2px 4px rgba(0,0,0,0.1)' }}
-                                                >
-                                                    {material.name}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Background Colors Section */}
-                                    <div>
-                                        <h3 style={{ color: '#1C1B1F', fontSize: '20px', fontWeight: '500', marginBottom: '16px' }}>
-                                            Background
-                                        </h3>
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', width: '100%' }}>
-                                            {backgroundOptions.map((bg) => (
-                                                <button
-                                                    key={bg.name}
-                                                    onClick={() => { console.log('Setting background to:', bg.value); setSelectedBackground(bg.value); }}
-                                                    style={{ aspectRatio: '1', borderRadius: '8px', background: bg.value, border: selectedBackground === bg.value ? '2px solid #E91E63' : '2px solid rgba(255, 255, 255, 0.8)', boxShadow: selectedBackground === bg.value ? '0 4px 12px rgba(233, 30, 99, 0.3)' : '0 2px 4px rgba(0,0,0,0.1)', transform: selectedBackground === bg.value ? 'scale(1.05)' : 'scale(1)', transition: 'all 0.3s ease', position: 'relative', cursor: 'pointer', padding: 0, width: '100%' }}
-                                                >
-                                                    <span style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '4px', background: 'rgba(0, 0, 0, 0.6)', color: 'white', fontSize: '10px', textAlign: 'center', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', borderBottomLeftRadius: '6px', borderBottomRightRadius: '6px' }}>
-                                                        {bg.name}
-                                                    </span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
+                                </div> // Closes the new parent div
                             )}
                         </div>
                     )}
