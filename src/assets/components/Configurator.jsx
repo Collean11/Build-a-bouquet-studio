@@ -66,9 +66,13 @@ const Configurator = () => {
                 } else {
                     console.log('WebXR not available, checking for other AR modes');
                 }
+
+                // Always set AR supported to true to show the button
+                setArSupported(true);
             } catch (error) {
                 console.error('AR support check failed:', error);
-                // Don't set arSupported to false here, as we might still have other AR modes
+                // Set AR supported to true even if check fails
+                setArSupported(true);
             }
         };
         checkAR();
@@ -94,13 +98,8 @@ const Configurator = () => {
                         arButton.style.zIndex = '1006';
                     }
 
-                    // Check if AR is supported
-                    if (modelViewer.canActivateAR) {
-                        console.log('AR is supported on this device');
-                    } else {
-                        console.log('AR is not supported on this device');
-                        // Don't set error here, as we might still have other AR modes
-                    }
+                    // Always set AR supported to true
+                    setArSupported(true);
                 };
 
                 modelViewer.addEventListener('load', handleLoad);
@@ -193,16 +192,17 @@ const Configurator = () => {
                         top: '20px',
                         left: '20px',
                         zIndex: 1001,
-                        backgroundColor: 'rgba(0,0,0,0.7)',
-                        backdropFilter: 'blur(10px)',
-                        WebkitBackdropFilter: 'blur(10px)',
-                        color: 'white',
+                        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                        backdropFilter: 'blur(20px)',
+                        WebkitBackdropFilter: 'blur(20px)',
+                        color: '#1C1B1F',
                         padding: '20px',
-                        borderRadius: '10px',
-                        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                        borderRadius: '16px',
+                        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.1)',
                         maxWidth: '300px',
-                        maxHeight: '80vh',
-                        overflowY: 'auto'
+                        maxHeight: '90vh',
+                        overflowY: 'auto',
+                        border: '1px solid rgba(255, 255, 255, 0.3)'
                     }}>
                         <div style={{
                             marginBottom: '24px',
@@ -392,11 +392,15 @@ const Configurator = () => {
                             alignItems: 'center',
                             justifyContent: 'center',
                             backdropFilter: 'blur(10px)',
-                            WebkitBackdropFilter: 'blur(10px)',
-                            '&:hover': {
-                                transform: 'scale(1.1)',
-                                boxShadow: '0 6px 16px rgba(233, 30, 99, 0.4)'
-                            }
+                            WebkitBackdropFilter: 'blur(10px)'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'scale(1.1)';
+                            e.currentTarget.style.boxShadow = '0 6px 16px rgba(233, 30, 99, 0.4)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'scale(1)';
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(233, 30, 99, 0.3)';
                         }}
                     >
                         <svg 
@@ -474,7 +478,7 @@ const Configurator = () => {
                     <model-viewer
                         src={modelBlobUrl}
                         ar
-                        ar-modes="webxr scene-viewer quick-look"
+                        ar-modes="scene-viewer webxr quick-look"
                         camera-controls
                         auto-rotate
                         camera-orbit="0deg 75deg 100%"
@@ -516,7 +520,8 @@ const Configurator = () => {
                             }
                             model-viewer::part(default-ar-button),
                             model-viewer::part(ar-button),
-                            #ar-button {
+                            #ar-button,
+                            .ar-button {
                                 background-color: #FF69B4 !important;
                                 border-radius: 50% !important;
                                 box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
@@ -535,7 +540,8 @@ const Configurator = () => {
                             }
                             model-viewer::part(default-ar-button)::before,
                             model-viewer::part(ar-button)::before,
-                            #ar-button::before {
+                            #ar-button::before,
+                            .ar-button::before {
                                 content: '' !important;
                                 display: block !important;
                                 width: 24px !important;
@@ -550,14 +556,16 @@ const Configurator = () => {
                             }
                             model-viewer::part(default-ar-button):hover,
                             model-viewer::part(ar-button):hover,
-                            #ar-button:hover {
+                            #ar-button:hover,
+                            .ar-button:hover {
                                 background-color: #FF1493 !important;
                                 transform: scale(1.1) !important;
                                 transition: all 0.3s ease !important;
                             }
                             model-viewer::part(default-ar-button):active,
                             model-viewer::part(ar-button):active,
-                            #ar-button:active {
+                            #ar-button:active,
+                            .ar-button:active {
                                 transform: scale(0.95) !important;
                             }
                         `}

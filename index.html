@@ -7,11 +7,29 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#ffffff">
     <title>Build a Bouquet Studio</title>
     <script type="module" src="https://unpkg.com/@google/model-viewer@3.4.0/dist/model-viewer.min.js"></script>
     <script nomodule src="https://unpkg.com/@google/model-viewer@3.4.0/dist/model-viewer-legacy.js"></script>
     <style>
+      :root {
+        --md-sys-color-primary: #FF69B4;
+        --md-sys-color-on-primary: #FFFFFF;
+        --md-sys-color-surface: rgba(255, 255, 255, 0.8);
+        --md-sys-color-on-surface: #000000;
+        --md-sys-elevation-level-1: 0 2px 4px rgba(0, 0, 0, 0.1);
+        --md-sys-elevation-level-2: 0 4px 8px rgba(0, 0, 0, 0.1);
+        --md-sys-elevation-level-3: 0 8px 16px rgba(0, 0, 0, 0.1);
+      }
+
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+        color: var(--md-sys-color-on-surface);
+      }
+
       #ar-container {
         position: fixed;
         top: 0;
@@ -19,25 +37,31 @@
         width: 100%;
         height: 100%;
         z-index: 1000;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
       }
+
       model-viewer {
         width: 100%;
         height: 100%;
-        --ar-button-background: #FF69B4;
+        --ar-button-background: var(--md-sys-color-primary);
         --ar-button-border-radius: 50%;
-        --ar-button-color: white;
-        --ar-button-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        --ar-button-color: var(--md-sys-color-on-primary);
+        --ar-button-shadow: var(--md-sys-elevation-level-2);
       }
-      model-viewer::part(default-ar-button) {
-        background-color: #FF69B4 !important;
+
+      model-viewer::part(default-ar-button),
+      model-viewer::part(ar-button),
+      #ar-button,
+      .ar-button {
+        background-color: var(--md-sys-color-primary) !important;
         border-radius: 50% !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+        box-shadow: var(--md-sys-elevation-level-2) !important;
+        position: fixed !important;
         bottom: 20px !important;
         right: 20px !important;
-        position: fixed !important;
         z-index: 1006 !important;
         display: block !important;
         opacity: 1 !important;
@@ -47,8 +71,13 @@
         height: 48px !important;
         padding: 0 !important;
         margin: 0 !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
       }
-      model-viewer::part(default-ar-button)::before {
+
+      model-viewer::part(default-ar-button)::before,
+      model-viewer::part(ar-button)::before,
+      #ar-button::before,
+      .ar-button::before {
         content: '' !important;
         display: block !important;
         width: 24px !important;
@@ -61,73 +90,22 @@
         left: 50% !important;
         transform: translate(-50%, -50%) !important;
       }
-      model-viewer::part(default-ar-button):hover {
+
+      model-viewer::part(default-ar-button):hover,
+      model-viewer::part(ar-button):hover,
+      #ar-button:hover,
+      .ar-button:hover {
         background-color: #FF1493 !important;
         transform: scale(1.1) !important;
-        transition: all 0.3s ease !important;
+        box-shadow: var(--md-sys-elevation-level-3) !important;
       }
-      model-viewer::part(default-ar-button):active {
+
+      model-viewer::part(default-ar-button):active,
+      model-viewer::part(ar-button):active,
+      #ar-button:active,
+      .ar-button:active {
         transform: scale(0.95) !important;
-      }
-      #ar-button {
-        position: fixed !important;
-        bottom: 20px !important;
-        right: 20px !important;
-        z-index: 1006 !important;
-        display: block !important;
-        opacity: 1 !important;
-        visibility: visible !important;
-        pointer-events: auto !important;
-        background-color: #FF69B4 !important;
-        border-radius: 50% !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
-        width: 48px !important;
-        height: 48px !important;
-        padding: 0 !important;
-        margin: 0 !important;
-      }
-      #ar-button::before {
-        content: '' !important;
-        display: block !important;
-        width: 24px !important;
-        height: 24px !important;
-        background-size: contain !important;
-        background-repeat: no-repeat !important;
-        background-position: center !important;
-        position: absolute !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-      }
-      model-viewer::part(ar-button) {
-        background-color: #FF69B4 !important;
-        border-radius: 50% !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
-        position: fixed !important;
-        bottom: 20px !important;
-        right: 20px !important;
-        z-index: 1006 !important;
-        display: block !important;
-        opacity: 1 !important;
-        visibility: visible !important;
-        pointer-events: auto !important;
-        width: 48px !important;
-        height: 48px !important;
-        padding: 0 !important;
-        margin: 0 !important;
-      }
-      model-viewer::part(ar-button)::before {
-        content: '' !important;
-        display: block !important;
-        width: 24px !important;
-        height: 24px !important;
-        background-size: contain !important;
-        background-repeat: no-repeat !important;
-        background-position: center !important;
-        position: absolute !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
+        box-shadow: var(--md-sys-elevation-level-1) !important;
       }
     </style>
   </head>
