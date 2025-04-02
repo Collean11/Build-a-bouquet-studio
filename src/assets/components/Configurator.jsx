@@ -8,6 +8,8 @@ import { Suspense } from 'react';
 import * as THREE from 'three';
 import { Environment } from '@react-three/drei';
 import { MeshReflectorMaterial } from '@react-three/drei';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../firebase';
 
 const balloonTypeOptions = [
     { name: 'Latex', value: 'A' },
@@ -184,40 +186,76 @@ const Configurator = () => {
         }
     }, [showAR, modelBlobUrl]);
 
-    const handleViewInAR = async () => {
+    const handleArView = async () => {
         if (!sceneRef.current) {
             console.error('AR: Scene not ready');
             return;
         }
 
         try {
+            setArError(null);
             setIsLoading(true);
+            console.log('AR: Starting model export...');
+            
             const exporter = new GLTFExporter();
             const scene = sceneRef.current;
 
-            // Export the scene to GLTF
+            // Ensure the scene is properly set up for export
+            scene.traverse((object) => {
+                if (object.isMesh) {
+                    object.castShadow = true;
+                    object.receiveShadow = true;
+                }
+            });
+
+            // Export the scene to binary GLTF
             const gltf = await new Promise((resolve, reject) => {
                 exporter.parse(
                     scene,
                     (gltf) => {
-                        // Create a JSON blob for the GLTF
-                        const jsonBlob = new Blob([JSON.stringify(gltf)], { type: 'model/gltf+json' });
-                        const jsonUrl = URL.createObjectURL(jsonBlob);
-                        resolve(jsonUrl);
+                        console.log('AR: Model exported successfully');
+                        resolve(gltf);
                     },
                     (error) => {
+                        console.error('AR: Export error:', error);
                         reject(error);
                     },
-                    { binary: false }
+                    { 
+                        binary: true,
+                        includeCustomExtensions: true,
+                        maxTextureSize: 4096,
+                        forceIndices: true
+                    }
                 );
             });
 
-            setModelBlobUrl(gltf);
+            // Create a unique filename
+            const timestamp = Date.now();
+            const filename = `ar-model-${timestamp}.glb`;
+            
+            // Upload to Firebase Storage
+            const storageRef = ref(storage, `ar-models/${filename}`);
+            const blob = new Blob([gltf], { type: 'model/gltf-binary' });
+            
+            console.log('AR: Uploading to Firebase Storage...');
+            await uploadBytes(storageRef, blob);
+
+            // Get the download URL
+            const downloadUrl = await getDownloadURL(storageRef);
+            console.log('AR: Model URL created:', downloadUrl);
+
+            // Use a CORS proxy service
+            const corsProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(downloadUrl)}`;
+            console.log('AR: Using CORS proxy URL:', corsProxyUrl);
+            
+            // Store the URL in state
+            setModelBlobUrl(corsProxyUrl);
             setShowAR(true);
             setIsLoading(false);
+            console.log('AR: Model ready for viewing');
         } catch (error) {
-            console.error('AR: Export failed');
-            setArError('Error preparing AR view');
+            console.error('AR: Export failed', error);
+            setArError('Error preparing AR view. Please try again.');
             setIsLoading(false);
         }
     };
@@ -443,7 +481,7 @@ const Configurator = () => {
 
                     {/* AR Button */}
                     <button
-                        onClick={handleViewInAR}
+                        onClick={handleArView}
                         style={{
                             position: 'fixed',
                             bottom: '20px',
@@ -978,6 +1016,26 @@ const Configurator = () => {
                     justifyContent: 'center',
                     alignItems: 'center'
                 }}>
+                    {isLoading && (
+                        <div style={{
+                            position: 'fixed',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                            color: 'white',
+                            padding: '20px',
+                            borderRadius: '10px',
+                            zIndex: 1002,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '10px'
+                        }}>
+                            <div>Loading AR model...</div>
+                            <div style={{ width: '40px', height: '40px', border: '4px solid #f3f3f3', borderTop: '4px solid #FF69B4', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                        </div>
+                    )}
                     <button 
                         className="exit-ar-button" 
                         onClick={handleExitAR}
@@ -1014,6 +1072,10 @@ const Configurator = () => {
                     )}
                     <style>
                         {`
+                            @keyframes spin {
+                                0% { transform: rotate(0deg); }
+                                100% { transform: rotate(360deg); }
+                            }
                             model-viewer {
                                 width: 100%;
                                 height: 100%;
@@ -1030,7 +1092,6 @@ const Configurator = () => {
                                 --ar-button-shadow: 0 4px 12px rgba(0,0,0,0.2);
                             }
                             
-                            /* Target all possible AR button selectors */
                             model-viewer::part(default-ar-button),
                             model-viewer::part(ar-button),
                             #ar-button {
@@ -1048,115 +1109,52 @@ const Configurator = () => {
                         `}
                     </style>
                     <model-viewer
-                        id="ar-model-viewer"
                         src={modelBlobUrl}
+                        alt="AR Balloon Bouquet"
                         ar
                         ar-modes="webxr scene-viewer quick-look"
                         camera-controls
-                        auto-rotate
-                        camera-orbit="45deg 55deg 4m"
-                        min-camera-orbit="auto auto 1.5m"
-                        max-camera-orbit="auto auto 15m"
                         shadow-intensity="1"
-                        ar-button
-                        ar-button-style="default"
-                        ar-button-position="bottom-right"
-                        ar-button-scale="1"
-                        ar-button-visibility="always"
-                        ar-scale="fixed"
-                        ar-placement="floor"
-                        ios-src={modelBlobUrl}
-                        quick-look-browsers="safari chrome"
+                        auto-rotate
+                        camera-orbit="45deg 55deg 2.5m"
+                        min-camera-orbit="auto auto 0.1m"
+                        max-camera-orbit="auto auto 10m"
+                        loading="eager"
+                        crossOrigin="anonymous"
                         style={{
                             width: '100%',
                             height: '100%',
-                            backgroundColor: 'transparent',
-                            '--poster-color': 'transparent',
-                            '--ar-button-display': 'block',
-                            '--ar-button-position': 'fixed',
-                            '--ar-button-bottom': '20px',
-                            '--ar-button-right': '20px',
-                            '--ar-button-z-index': '1006',
-                            '--ar-button-background-color': '#FF69B4',
-                            '--ar-button-border-radius': '50%',
-                            '--ar-button-width': '48px',
-                            '--ar-button-height': '48px',
-                            '--ar-button-padding': '0',
-                            '--ar-button-margin': '0'
+                            backgroundColor: 'transparent'
                         }}
                         onError={(error) => {
                             console.error('Model viewer error:', error);
-                            setArError('Error loading AR model. Please try again.');
-                            if (error.detail) {
-                                console.error('Error details:', error.detail);
-                            }
+                            setArError('Failed to load AR model. Please try again.');
                         }}
-                        onLoad={() => {
-                            console.log('AR model loaded successfully');
-                            setArError(null);
-                            const modelViewer = document.querySelector('#ar-model-viewer');
-                            if (modelViewer) {
-                                modelViewer.style.display = 'block';
-                                modelViewer.style.visibility = 'visible';
-                                modelViewer.style.opacity = '1';
-                                
-                                // Force AR button to be visible
-                                const arButton = modelViewer.shadowRoot?.querySelector('#ar-button');
-                                if (arButton) {
-                                    arButton.style.cssText = `
-                                        background-color: #FF69B4 !important;
-                                        border-radius: 50% !important;
-                                        width: 48px !important;
-                                        height: 48px !important;
-                                        padding: 0 !important;
-                                        margin: 0 !important;
-                                        position: fixed !important;
-                                        bottom: 20px !important;
-                                        right: 20px !important;
-                                        z-index: 1006 !important;
-                                        display: block !important;
-                                        opacity: 1 !important;
-                                        visibility: visible !important;
-                                        transform: none !important;
-                                        pointer-events: auto !important;
-                                        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
-                                    `;
-                                }
-                                
-                                // Also try to find and style the default AR button
-                                const defaultArButton = modelViewer.shadowRoot?.querySelector('#default-ar-button');
-                                if (defaultArButton) {
-                                    defaultArButton.style.cssText = `
-                                        background-color: #FF69B4 !important;
-                                        border-radius: 50% !important;
-                                        width: 48px !important;
-                                        height: 48px !important;
-                                        padding: 0 !important;
-                                        margin: 0 !important;
-                                        position: fixed !important;
-                                        bottom: 20px !important;
-                                        right: 20px !important;
-                                        z-index: 1006 !important;
-                                        display: block !important;
-                                        opacity: 1 !important;
-                                        visibility: visible !important;
-                                        transform: none !important;
-                                        pointer-events: auto !important;
-                                        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
-                                    `;
-                                }
-                                
-                                console.log('Model viewer state:', {
-                                    display: modelViewer.style.display,
-                                    visibility: modelViewer.style.visibility,
-                                    opacity: modelViewer.style.opacity,
-                                    src: modelViewer.src,
-                                    hasARButton: !!arButton,
-                                    hasDefaultARButton: !!defaultArButton
-                                });
-                            }
-                        }}
-                    />
+                    >
+                        <button 
+                            slot="ar-button" 
+                            style={{
+                                backgroundColor: '#FF69B4',
+                                borderRadius: '50%',
+                                border: 'none',
+                                position: 'fixed',
+                                bottom: '16px',
+                                right: '16px',
+                                width: '60px',
+                                height: '60px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'white',
+                                fontSize: '20px',
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                                zIndex: 1006
+                            }}
+                        >
+                            👋
+                        </button>
+                    </model-viewer>
                 </div>
             )}
         </>
