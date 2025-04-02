@@ -96,6 +96,7 @@ const Configurator = () => {
     } = useCustomization();
     const [isLoading, setIsLoading] = useState(false);
     const sceneRef = useRef();
+    const bouquetGroupRef = useRef();
     const [isMobileView, setIsMobileView] = useState(false);
     const [showUI, setShowUI] = useState(true);
     const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -219,8 +220,8 @@ const Configurator = () => {
     }, [showAR, modelBlobUrl]);
 
     const handleArView = async () => {
-        if (!sceneRef.current) {
-            console.error('AR: Scene not ready');
+        if (!bouquetGroupRef.current) { 
+            console.error('AR: Bouquet group ref not ready');
             return;
         }
 
@@ -230,100 +231,80 @@ const Configurator = () => {
             console.log('AR: Starting model export...');
             
             const exporter = new GLTFExporter();
-            const scene = sceneRef.current;
+            const objectToExport = bouquetGroupRef.current; 
+            
+            // --- Add Debugging --- 
+            console.log('AR DEBUG: Object to export (bouquetGroupRef.current):', objectToExport);
 
-            // Optimize scene for export without modifying geometries
-            scene.traverse((object) => {
+            // Explicitly check if the object is valid and has traverse method
+            if (!objectToExport || typeof objectToExport.traverse !== 'function') {
+                console.error('AR DEBUG: Invalid object for export. bouquetGroupRef.current is not a traversable Object3D:', objectToExport);
+                // Provide a more specific error message
+                setArError('AR Error: Cannot find the 3D model data to export.'); 
+                setIsLoading(false); // Stop loading indicator
+                return; // Stop execution
+            }
+            // --- End Debugging ---
+
+            console.log('AR DEBUG: Object seems valid, attempting traverse...'); // Log before traverse
+            objectToExport.traverse((object) => { // This is the line (~236) that was failing 
                 if (object.isMesh) {
-                    object.castShadow = true;
+                    // Ensure materials are suitable for GLB export if needed
+                    // We might need to temporarily swap materials or handle this
+                    object.castShadow = true; 
                     object.receiveShadow = true;
                 }
             });
 
-            // Export the scene to binary GLTF with optimized settings
+            console.log('AR DEBUG: Traverse completed.'); // Log after traverse
+
             const gltf = await new Promise((resolve, reject) => {
                 exporter.parse(
-                    scene,
+                    objectToExport,
                     (gltf) => {
                         console.log('AR: Model exported successfully');
                         resolve(gltf);
                     },
                     (error) => {
-                        console.error('AR: Export error:', error);
+                        console.error('AR: GLTFExporter parse error', error);
                         reject(error);
                     },
                     { 
-                        binary: true,
-                        includeCustomExtensions: true,
-                        maxTextureSize: 512,
-                        forceIndices: true,
+                        binary: true, 
+                        trs: false,
                         onlyVisible: true,
                         embedImages: true,
-                        optimize: true,
-                        optimizeVertices: true,
-                        optimizeMaterials: true,
-                        optimizeMeshes: true,
-                        optimizeTextures: true,
-                        optimizeAnimations: true,
-                        optimizeAccessors: true,
-                        optimizeBufferViews: true,
-                        optimizeBuffers: true,
-                        maxVertexCount: 65536,
-                        maxIndexCount: 65536,
-                        maxMaterialCount: 32,
-                        maxTextureCount: 16,
-                        maxAnimationCount: 8,
-                        maxAccessorCount: 64,
-                        maxBufferViewCount: 32,
-                        maxBufferCount: 8
+                        maxTextureSize: 1024
                     }
                 );
             });
 
-            // Create a unique filename with timestamp
             const timestamp = Date.now();
             const filename = `ar-model-${timestamp}.glb`;
-            
-            // Upload to Firebase Storage
             const storageRef = ref(storage, `ar-models/${filename}`);
             const blob = new Blob([gltf], { type: 'model/gltf-binary' });
             
             console.log('AR: Uploading to Firebase Storage...');
-            
-            // Upload the file with metadata
             await uploadBytes(storageRef, blob, {
                 contentType: 'model/gltf-binary',
-                cacheControl: 'public, max-age=31536000',
-                customMetadata: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'GET, HEAD, PUT, POST, DELETE, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Content-Type, Content-Disposition, Origin, Accept',
-                    'Access-Control-Max-Age': '3600',
-                    'Access-Control-Expose-Headers': 'Content-Type, Content-Disposition'
-                }
+                cacheControl: 'public, max-age=300'
             });
-            
             console.log('AR: Upload complete');
             
-            // Get the download URL
             const downloadUrl = await getDownloadURL(storageRef);
             console.log('AR: Model URL created:', downloadUrl);
             
-            // Extract the model path from the Firebase URL
-            const modelPath = `ar-models/${filename}`;
-            
-            // Use our proxy server URL
-            const proxyUrl = `http://localhost:5182/model/${modelPath}`;
-            console.log('AR: Using proxy URL:', proxyUrl);
-            
-            // Store the URL in state
-            setModelBlobUrl(proxyUrl);
+            // Set the DIRECT Firebase download URL for model-viewer
+            console.log("\n\n*** DEBUG: EXECUTING NEW CODE PATH - USING DIRECT URL ***\n\n");
+            console.log('AR: Setting model-viewer src to direct Firebase URL:', downloadUrl);
+            setModelBlobUrl(downloadUrl); // Use the direct download URL
+
             setShowAR(true);
-            setIsLoading(false);
-            console.log('AR: Model ready for viewing');
+            console.log('AR: Model should now load in viewer (using direct URL)');
         } catch (error) {
             console.error('AR: Export failed', error);
-            setArError('Error preparing AR view. Please try again.');
+            setArError('Failed to prepare model for AR view.');
+        } finally {
             setIsLoading(false);
         }
     };
@@ -666,6 +647,11 @@ const Configurator = () => {
         setTouchEnd(null);
     };
 
+    const handleCanvasClick = () => {
+        console.log('Canvas BACKGROUND clicked, deselecting balloon.');
+        setSelectedBalloon(null);
+    };
+
     console.log("Configurator component rendering RETURN");
     return (
         <>
@@ -891,8 +877,9 @@ const Configurator = () => {
             }} />
             {!showAR && (
                 <Canvas
+                    ref={sceneRef}
                     camera={{ position: [0, 1, 2], fov: 60 }}
-                    style={{ 
+                    style={{
                         background: 'transparent',
                         width: '100vw',
                         height: '100vh',
@@ -917,9 +904,9 @@ const Configurator = () => {
                     <directionalLight 
                         position={[5, 5, 5]} 
                         intensity={1.5} 
-                        castShadow
-                        shadow-mapSize-width={2048}
-                        shadow-mapSize-height={2048}
+                        castShadow 
+                        shadow-mapSize-width={2048} 
+                        shadow-mapSize-height={2048} 
                         shadow-camera-far={50}
                         shadow-camera-left={-10}
                         shadow-camera-right={10}
@@ -937,57 +924,59 @@ const Configurator = () => {
                         castShadow
                     />
                     
-                    <mesh 
-                        rotation={[-Math.PI / 2, 0, 0]} 
-                        position={[0, -1, 0]} 
-                        receiveShadow
-                    >
-                        <planeGeometry args={[50, 50]} />
-                        <MeshReflectorMaterial
-                            color={backgroundOptions.find(bg => bg.value === selectedBackground)?.primaryColor || '#FF6B6B'}
-                            mirror={0.4}
-                            blur={[200, 200]}
-                            resolution={1024}
-                            mixBlur={0.8}
-                            mixStrength={1.2}
-                            minDepthThreshold={0.2}
-                            maxDepthThreshold={1}
-                            depthScale={0.8}
+                    { (() => {
+                      const floorColor = backgroundOptions.find(bg => bg.value === selectedBackground)?.primaryColor || '#CCCCCC';
+                      console.log('[Floor Color] Calculated for MeshReflectorMaterial:', floorColor, ' (Selected BG:', selectedBackground, ')');
+                      return null;
+                    })() }
+
+                     <mesh 
+                         position={[0, 0, -5]}
+                         onClick={handleCanvasClick}
+                     >
+                         <planeGeometry args={[100, 100]} />
+                         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+                     </mesh>
+                     <mesh 
+                         rotation={[-Math.PI / 2, 0, 0]} 
+                         position={[0, -1, 0]} 
+                         receiveShadow
+                     >
+                         <planeGeometry args={[50, 50]} />
+                         <MeshReflectorMaterial
+                             blur={[300, 100]}
+                             resolution={1024}
+                             mixBlur={1}
+                             mixStrength={5}
+                             roughness={1}
+                             depthScale={1.2}
+                             minDepthThreshold={0.4}
+                             maxDepthThreshold={1.4}
+                             color={backgroundOptions.find(bg => bg.value === selectedBackground)?.primaryColor || '#CCCCCC'}
+                             metalness={0}
+                             mirror={0}
                         />
-                    </mesh>
-                    
-                    <group position={[0, -1, 0]} ref={sceneRef}>
-                        <Suspense fallback={null}>
-                            <BalloonBouquetV4 
-                                position={[0, 0, 0]}
-                                scale={[1.2, 1.2, 1.2]}
-                                userData={{ 
-                                    isBalloonBouquet: true,
-                                    isARViewable: true
-                                }}
-                                castShadow
-                                receiveShadow
-                                onClick={(event) => {
-                                    // Get the clicked balloon ID from the event
-                                    const balloonId = event.object.userData.balloonId;
-                                    if (balloonId) {
-                                        console.log('Clicked balloon:', balloonId);
-                                        setSelectedBalloon(balloonId);
-                                    }
-                                }}
-                            />
-                        </Suspense>
-                    </group>
+                     </mesh>
+                     <group 
+                        ref={bouquetGroupRef}
+                        position={[0, -1, 0]}
+                     >
+                         <Suspense fallback={null}>
+                             <BalloonBouquetV4 
+                                 position={[0, 0, 0]}
+                             />
+                         </Suspense>
+                     </group>
                     <OrbitControls 
-                        enablePan={false} 
-                        minDistance={1}
-                        maxDistance={20}
-                        minPolarAngle={Math.PI / 4}
-                        maxPolarAngle={Math.PI / 2}
-                        enableDamping
-                        dampingFactor={0.05}
-                        target={[0, 0, 0]}
-                    />
+                         enablePan={false} 
+                         minDistance={1}
+                         maxDistance={20}
+                         minPolarAngle={Math.PI / 4}
+                         maxPolarAngle={Math.PI / 2}
+                         enableDamping
+                         dampingFactor={0.05}
+                         target={[0, 0, 0]}
+                     />
                     <Environment preset="studio" background={false} />
                 </Canvas>
             )}
@@ -1038,7 +1027,6 @@ const Configurator = () => {
                         {showUI ? '×' : '☰'}
                     </button>
 
-                    {/* Help Button */}
                     <button 
                         onClick={showWelcomeMessage}
                         style={{
@@ -1083,7 +1071,6 @@ const Configurator = () => {
                         ?
                     </button>
 
-                    {/* AR Button */}
                     <button
                         onClick={handleArView}
                         style={{
@@ -1188,26 +1175,24 @@ const Configurator = () => {
                             </div>
 
                             {isMobileView ? (
-                                // --- Mobile View (Card Carousel Implementation) ---
-                                <div style={{ // Main container for mobile cards + nav
+                                <div style={{
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    height: '100%', // Use full available height
+                                    height: '100%',
                                     width: '100%'
                                 }}>
-                                    {/* Mobile Navigation Controls (Smaller) */}
                                     <div style={{
                                         display: 'flex',
                                         justifyContent: 'space-between',
                                         alignItems: 'center',
-                                        padding: '4px 8px', // Reduced padding
+                                        padding: '4px 8px',
                                         borderBottom: '1px solid rgba(0,0,0,0.1)',
                                         flexShrink: 0
                                     }}>
                                         <button 
                                             onClick={() => setCurrentCardIndex(prev => Math.max(0, prev - 1))}
                                             disabled={currentCardIndex === 0}
-                                            style={{ /* Adapted styles for mobile */
+                                            style={{
                                                 background: 'transparent',
                                                 border: 'none',
                                                 borderRadius: '50%',
@@ -1233,7 +1218,7 @@ const Configurator = () => {
                                         <button 
                                             onClick={() => setCurrentCardIndex(prev => Math.min(carouselCards.length - 1, prev + 1))}
                                             disabled={currentCardIndex === carouselCards.length - 1}
-                                            style={{ /* Adapted styles for mobile */
+                                            style={{
                                                 background: 'transparent',
                                                 border: 'none',
                                                 borderRadius: '50%',
@@ -1255,12 +1240,11 @@ const Configurator = () => {
                                         </button>
                                     </div>
 
-                                    {/* Dot Indicators (Mobile - Small) */}
                                     <div style={{
                                         display: 'flex',
                                         justifyContent: 'center',
                                         gap: '4px',
-                                        padding: '6px 0', // Adjusted padding
+                                        padding: '6px 0',
                                         flexShrink: 0
                                     }}>
                                         {carouselCards.map((card, index) => (
@@ -1283,19 +1267,17 @@ const Configurator = () => {
                                         ))}
                                     </div>
 
-                                    {/* Active Card Content Area (Scrollable - Mobile) */}
                                     <div style={{
-                                        flex: 1, // Take remaining space
-                                        overflowY: 'auto', // Allow content to scroll
-                                        padding: '8px', // Mobile padding
+                                        flex: 1,
+                                        overflowY: 'auto',
+                                        padding: '8px',
                                         width: '100%',
                                         boxSizing: 'border-box',
-                                        WebkitOverflowScrolling: 'touch', // Keep smooth scroll for touch
-                                        scrollbarWidth: 'none', // Hide scrollbar
+                                        WebkitOverflowScrolling: 'touch',
+                                        scrollbarWidth: 'none',
                                         msOverflowStyle: 'none',
-                                        '&::-webkit-scrollbar': { display: 'none' } // Hide scrollbar (webkit)
+                                        '&::-webkit-scrollbar': { display: 'none' }
                                     }}>
-                                        {/* Render only the current card's content */}
                                         {carouselCards[currentCardIndex].content({
                                             selectedBalloon, setSelectedBalloon, balloonTypes, toggleBalloonType,
                                             balloonColors, setColor, balloonMaterials, setMaterial, colorOptions,
@@ -1305,15 +1287,12 @@ const Configurator = () => {
                                     </div>
                                 </div>
                             ) : (
-                                // --- Desktop View --- 
-                                // Add parent div to manage height distribution
                                 <div style={{
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    height: '100%', // Fill the outer container's height
+                                    height: '100%',
                                     width: '100%'
                                 }}>
-                                    {/* Desktop Navigation Controls */}
                                     <div style={{
                                         display: 'flex',
                                         justifyContent: 'space-between',
@@ -1389,7 +1368,6 @@ const Configurator = () => {
                                         </button>
                                     </div>
 
-                                    {/* Dot Indicators (Desktop) */}
                                     <div style={{
                                         display: 'flex',
                                         justifyContent: 'center',
@@ -1417,9 +1395,8 @@ const Configurator = () => {
                                         ))}
                                     </div>
 
-                                    {/* Active Card Content Area (Scrollable) */}
                                     <div style={{
-                                        flex: 1, // Takes remaining space within the new parent
+                                        flex: 1,
                                         overflowY: 'auto',
                                         padding: '20px',
                                         width: '100%',
@@ -1432,7 +1409,7 @@ const Configurator = () => {
                                             selectedBackground, setSelectedBackground, balloonPositions
                                         })}
                                     </div>
-                                </div> // Closes the new parent div
+                                </div>
                             )}
                         </div>
                     )}
@@ -1578,9 +1555,10 @@ const Configurator = () => {
                         {showAR && (
                             <model-viewer
                                 src={modelBlobUrl}
+                                ios-src={modelBlobUrl}
                                 alt="AR Balloon Bouquet"
                                 ar
-                                ar-modes="scene-viewer webxr quick-look"
+                                ar-modes="quick-look webxr scene-viewer"
                                 camera-controls
                                 shadow-intensity="1"
                                 auto-rotate
@@ -1602,7 +1580,8 @@ const Configurator = () => {
                                     console.log('AR: Model loaded successfully');
                                     setIsLoading(false);
                                 }}
-                            />
+                            >
+                            </model-viewer>
                         )}
                     </div>
                 </div>
