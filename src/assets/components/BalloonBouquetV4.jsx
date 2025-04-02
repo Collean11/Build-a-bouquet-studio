@@ -4,15 +4,14 @@ Command: npx gltfjsx@6.5.3 public/models/balloonBouquetV4.gltf
 */
 
 import React, { useEffect, useMemo, useRef } from 'react'
-import { useGLTF, Environment } from '@react-three/drei'
+import { useGLTF } from '@react-three/drei'
 import { useCustomization } from '../../contexts/Customization'
-import * as THREE from 'three'
+import { MeshPhysicalMaterial, Color } from 'three'
 
 const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) => {
-  const { nodes, materials } = useGLTF('/models/balloonBouquetV4.gltf')
+  const { nodes, materials } = useGLTF('/models/balloonBouquetV4.gltf', true)
+
   const { 
-    selectedBalloon,
-    setSelectedBalloon,
     balloonTypes,
     toggleBalloonType,
     balloonColors,
@@ -20,22 +19,36 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
   } = useCustomization();
 
   const groupRef = useRef();
+  const mountedRef = useRef(false);
 
   useEffect(() => {
-    if (groupRef.current) {
+    if (groupRef.current && !mountedRef.current) {
+      mountedRef.current = true;
       groupRef.current.userData = {
         ...userData,
         isBalloonBouquet: true,
         isARViewable: true
       };
-      // Signal that the model is loaded
-      const event = new CustomEvent('balloonBouquetLoaded');
-      window.dispatchEvent(event);
+      window.dispatchEvent(new CustomEvent('balloonBouquetLoaded'));
     }
+
+    return () => {
+      mountedRef.current = false;
+    };
   }, [userData]);
 
-  // Create materials with colors and different finishes
+  useEffect(() => {
+    if (!nodes || !materials) {
+      console.error('Model not loaded');
+    }
+  }, [nodes, materials]);
+
   const coloredMaterials = useMemo(() => {
+    if (!nodes || !materials) {
+      console.error('Cannot create materials');
+      return {};
+    }
+
     const newMaterials = {};
     
     Object.entries(balloonColors).forEach(([balloonId, color]) => {
@@ -44,12 +57,9 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
       ['A', 'B', 'C'].forEach(part => {
         const meshName = `${balloonId.charAt(0).toUpperCase() + balloonId.slice(1)}${part}`;
         if (nodes[meshName]) {
-          const material = new THREE.MeshPhysicalMaterial();
+          const material = new MeshPhysicalMaterial();
+          material.color = new Color(color);
           
-          // Set base color
-          material.color = new THREE.Color(color);
-          
-          // Apply material-specific properties
           switch(materialType) {
             case 'pearl':
               material.metalness = 0.1;
@@ -60,30 +70,29 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
               material.iridescenceIOR = 1.5;
               material.sheen = 1.0;
               material.sheenRoughness = 0.2;
-              material.sheenColor = new THREE.Color(1.0, 1.0, 1.0);
-              material.envMapIntensity = 2.0;
+              material.sheenColor = new Color(1.0, 1.0, 1.0);
               material.transmission = 0.0;
               material.transparent = false;
               material.opacity = 1.0;
-              material.attenuationColor = new THREE.Color(0.95, 0.95, 1.0);
+              material.attenuationColor = new Color(0.95, 0.95, 1.0);
               material.attenuationDistance = 1.0;
+              material.envMapIntensity = 2.0;
               break;
             case 'metallic':
               material.metalness = 0.95;
               material.roughness = 0.05;
               material.clearcoat = 1.0;
               material.clearcoatRoughness = 0.05;
-              material.envMapIntensity = 2.5;
               material.sheen = 0.5;
               material.sheenRoughness = 0.2;
-              material.sheenColor = new THREE.Color(0.8, 0.8, 0.8);
+              material.sheenColor = new Color(0.8, 0.8, 0.8);
               material.transmission = 0.05;
               material.transparent = true;
               material.opacity = 0.98;
-              material.attenuationColor = new THREE.Color(0.7, 0.7, 0.7);
+              material.attenuationColor = new Color(0.7, 0.7, 0.7);
               material.attenuationDistance = 1.0;
+              material.envMapIntensity = 2.5;
               break;
-            case 'standard':
             default:
               material.roughness = 0.4;
               material.metalness = 0.0;
@@ -91,13 +100,13 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
               material.clearcoatRoughness = 0.2;
               material.sheen = 0.3;
               material.sheenRoughness = 0.4;
-              material.envMapIntensity = 1.2;
               material.transmission = 0.1;
               material.transparent = true;
               material.opacity = 0.95;
               material.sheenColor.set(0.9, 0.9, 0.9);
-              material.attenuationColor = new THREE.Color(0.9, 0.9, 0.9);
+              material.attenuationColor = new Color(0.9, 0.9, 0.9);
               material.attenuationDistance = 1.0;
+              material.envMapIntensity = 1.2;
               break;
           }
           
@@ -111,28 +120,21 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
 
   const handleBalloonClick = (balloonId, event) => {
     event.stopPropagation();
-    console.log(`Balloon clicked: ${balloonId}`);
     if (event.altKey) {
       toggleBalloonType(balloonId);
-    } else {
-      setSelectedBalloon(balloonId);
     }
   };
 
-  // Consistent scale for Type B balloons
   const typeBScale = [9.5, 9.5, 9.5];
 
-  // Camera setup
-  const camera = new THREE.PerspectiveCamera(
-    45, // FOV
-    window.innerWidth / window.innerHeight,
-    0.1, // Near plane - reduced from 0.5 to prevent clipping when zooming in
-    1000 // Far plane - increased from 500 to ensure distant objects are visible
-  );
-
   return (
-    <group ref={groupRef} position={position} scale={scale} dispose={null}>
-      <Environment preset="sunset" background={false} blur={0.8} />
+    <group 
+      ref={groupRef} 
+      position={position} 
+      scale={[0.6, 0.6, 0.6]} 
+      rotation={[0, 0, 0]}
+      dispose={null}
+    >
       <mesh geometry={nodes.Balloon_weight.geometry} material={materials.whiteString} position={[0.091, 0.131, -0.072]} rotation={[0, 0, -3.099]} scale={-0.047} />
       
       {/* Top Balloon Group */}

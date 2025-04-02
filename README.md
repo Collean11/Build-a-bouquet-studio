@@ -11,64 +11,95 @@ Currently, two official plugins are available:
 
 If you are developing a production application, we recommend using TypeScript and enable type-aware lint rules. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
 
-## Troubleshooting AR Button Issues
+## Troubleshooting Guide
 
 ### AR Button Not Visible
-If the AR button disappears or is not visible, follow these steps:
+
+If the AR button is not appearing when you click "View in AR", follow these steps:
 
 1. **Check Device Compatibility**
-   - iOS devices: Must use Safari browser
-   - Android devices: Must use Chrome browser
-   - Desktop: Must use Chrome or Edge with WebXR support
+   - iOS: Use Safari browser
+   - Android: Use Chrome browser
+   - Desktop: Use Chrome or Edge with WebXR support
+   - Mac: Must have AR capabilities (e.g., LiDAR scanner)
 
-2. **Browser Cache Clear**
-   ```bash
-   # On Chrome/Edge:
-   1. Open Developer Tools (F12 or right-click -> Inspect)
-   2. Hold Shift and click the refresh button
-   # OR
-   1. Press Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac)
-   ```
+2. **Browser Cache**
+   - Clear your browser cache (Ctrl+Shift+R or Cmd+Shift+R)
+   - Or hold Shift and click the refresh button
 
-3. **Model-Viewer Script Check**
+3. **Check Console Logs**
    - Open Developer Tools (F12)
-   - Go to Network tab
-   - Filter for "model-viewer"
-   - Ensure both scripts are loaded:
-     - `@google/model-viewer/dist/model-viewer.min.js`
-     - `@google/model-viewer/dist/model-viewer-legacy.js`
+   - Look for logs starting with "AR:"
+   - Common messages:
+     - "AR: iOS device detected"
+     - "AR: MacOS device detected"
+     - "AR: MacOS support: Yes/No"
+     - "AR: Model loaded"
+     - "AR: Starting model export..."
+     - "AR: Model exported"
 
-4. **Force AR Button Display**
-   If the button is still not visible, try these steps:
-   1. Click the pink AR button in the bottom-right corner
-   2. Wait for the model to load
-   3. Look for a green circular button in the bottom-right corner
-   4. If not visible, try refreshing the page and repeating steps 1-3
+4. **Model Loading Issues**
+   - Wait for the model to fully load before clicking "View in AR"
+   - Check if the model-viewer element is present in the DOM
+   - Verify the model URL is accessible
 
-5. **Common Issues and Solutions**
-   - If you see "AR is not supported on this device":
-     - Try using a different browser
-     - Ensure you're on a compatible device
-     - Check if your device has AR capabilities
-   - If the model loads but no AR button appears:
-     - Try clearing browser cache
-     - Check if you're in a supported browser
-     - Ensure the model-viewer scripts are loaded correctly
+5. **AR Support Detection**
+   - The app checks for AR support on startup
+   - For MacOS, it verifies WebXR support
+   - For iOS/Android, AR is enabled by default
+   - Check console for "AR: Support check failed" if issues persist
 
-6. **Developer Console Check**
-   - Open Developer Tools (F12)
-   - Go to Console tab
-   - Look for any error messages related to:
-     - model-viewer
-     - AR support
-     - WebXR
-   - Share these messages with support if issues persist
+6. **Common Solutions**
+   - Try clicking the pink "View in AR" button first
+   - Wait for the model to load completely
+   - Check if your device has AR capabilities
+   - Ensure you're using a compatible browser
+   - Try clearing browser cache and reloading
 
-### AR Button Styling
-The AR button should appear as a green circular button in the bottom-right corner. If it appears differently:
-- Check if your browser is up to date
-- Try clearing browser cache
-- Ensure no browser extensions are interfering with the display
+7. **Development Mode**
+   - In development, AR support is always enabled
+   - Production builds check for actual device support
+   - Use `npm run build` to test production behavior
+
+### Model Loading Issues
+
+If the 3D model isn't loading properly:
+
+1. **Check Model Path**
+   - Verify the model path in `src/assets/models/`
+   - Ensure the model file exists and is accessible
+
+2. **Console Errors**
+   - Look for Three.js related errors
+   - Check for model loading failures
+   - Verify model format compatibility
+
+3. **Performance Issues**
+   - Reduce model complexity if needed
+   - Check for memory leaks in development
+   - Monitor frame rate in AR mode
+
+### Development Tips
+
+1. **Testing AR**
+   - Use Chrome DevTools device emulation
+   - Test on multiple devices if possible
+   - Check AR support detection logs
+
+2. **Debugging**
+   - Use the console logs with "AR:" prefix
+   - Monitor model loading states
+   - Check for WebXR support
+
+3. **Common Pitfalls**
+   - AR button may not appear immediately
+   - Model needs to load before AR activation
+   - Device must support AR features
+
+For more detailed information about model-viewer and AR support, visit:
+- [model-viewer Documentation](https://modelviewer.dev/docs/)
+- [WebXR Device API](https://developer.mozilla.org/en-US/docs/Web/API/WebXR_Device_API)
+- [AR Quick Look](https://developer.apple.com/documentation/arkit/ar_quick_look)
 
 ## AR Button Fix Implementation
 
