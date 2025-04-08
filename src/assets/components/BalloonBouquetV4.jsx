@@ -140,49 +140,342 @@ const BalloonBouquetV4 = ({ position = [0, 0, 0], scale = 1, userData = {} }) =>
       rotation={[0, 0, 0]}
       dispose={null}
     >
-      <mesh geometry={nodes.Balloon_weight.geometry} material={materials.whiteString} position={[0.091, 0.131, -0.072]} rotation={[0, 0, -3.099]} scale={-0.047} />
+      {/* Balloon Weight (Node 0) */}
+      <mesh 
+        geometry={nodes.Balloon_weight.geometry} 
+        material={materials.whiteString} 
+        position={[0.09112584590911865, 0.13144969940185547, -0.07219517230987549]} 
+        quaternion={[0, 0, -0.9997770190238953, 0.021118545904755592]} 
+        scale={[-0.0469658337533474, -0.0469658337533474, -0.0469658337533474]} 
+      />
       
-      <group ref={el => balloonGroupRefs.current.top = el} position={[0.079, 2.964, -0.112]} rotation={[-1.81, 0.243, -0.734]} scale={initialGroupScale}>
-        <mesh geometry={nodes.TopC.geometry} material={coloredMaterials.TopC || materials.Metallic} onClick={(e) => handleBalloonClick('top', e)} visible={balloonTypes.top === 'C'} userData={{ balloonId: 'top' }} />
-        <mesh geometry={nodes.TopA.geometry} material={coloredMaterials.TopA || materials.Latex} onClick={(e) => handleBalloonClick('top', e)} visible={balloonTypes.top === 'A'} position={[-0.0001, -0.392, 0.878]} rotation={[1.895, 0.766, -3.078]} scale={1.673} userData={{ balloonId: 'top' }} />
-        <mesh geometry={nodes.TopB.geometry} material={coloredMaterials.TopB || materials.Metallic} onClick={(e) => handleBalloonClick('top', e)} visible={balloonTypes.top === 'B'} scale={typeBScale} rotation={[-2.752, 0.05, -0.251]} position={[0.537, 1.501, -2.51]} userData={{ balloonId: 'top' }} />
-        <mesh geometry={nodes.BodyStrings.geometry} material={materials.whiteString} position={[0.458, 1.627, -2.334]} rotation={[-2.743, 0.002, -1.073]} scale={9.906} />
+      {/* Top Balloon Group (Node 5) */}
+      <group 
+        position={[0.07916128635406494, 2.964110851287842, -0.11150717735290527]} 
+        quaternion={[-0.7554110884666443, -0.21023286879062653, -0.3092210292816162, 0.5380880832672119]} 
+        scale={[0.2603088617324829, 0.26030880212783813, 0.2603088319301605]}
+      >
+        {/* TopC Mesh (Node 5 - Identity relative to parent) */}
+        <mesh 
+            geometry={nodes.TopC.geometry} 
+            material={coloredMaterials.TopC || materials.Metallic} 
+            onClick={(e) => handleBalloonClick('top', e)} 
+            visible={balloonTypes.top === 'C'} 
+            userData={{ balloonId: 'top' }} 
+            position={[0,0,0]} quaternion={[0,0,0,1]} scale={[1,1,1]} 
+        />
+        {/* TopA Mesh (Node 3) */}
+        <mesh 
+          geometry={nodes.TopA.geometry} 
+          material={coloredMaterials.TopA || materials.Latex} 
+          onClick={(e) => handleBalloonClick('top', e)} 
+          visible={balloonTypes.top === 'A'}
+          position={[-0.016502678394317627, -0.22198593616485596, 0.5780373811721802]}
+          quaternion={[-0.19423280656337738, 0.7596822381019592, -0.5314379334449768, 0.3205157220363617]}
+          scale={[1.6725478172302246, 1.6725484132766724, 1.6725480556488037]}
+          userData={{ balloonId: 'top' }}
+        />
+        {/* TopB Mesh (Node 4) */}
+        <mesh 
+          geometry={nodes.TopB.geometry} 
+          material={coloredMaterials.TopB || materials.Metallic} 
+          onClick={(e) => handleBalloonClick('top', e)} 
+          visible={balloonTypes.top === 'B'}
+          position={[0.5371162295341492, 1.5005285739898682, -2.5103487968444824]}
+          quaternion={[-0.9737213253974915, -0.11777164787054062, -0.048612188547849655, 0.18876822292804718]}
+          scale={[9.906177520751953, 9.906181335449219, 9.906182289123535]}
+          userData={{ balloonId: 'top' }}
+        />
+        {/* BodyStrings Mesh (Node 1) */}
+        <mesh 
+            geometry={nodes.BodyStrings.geometry} 
+            material={materials.whiteString} 
+            position={[0.4577634632587433, 1.6271116733551025, -2.3343193531036377]} 
+            quaternion={[-0.8426973223686218, -0.5006005764007568, -0.10215161740779877, 0.16978029906749725]} 
+            scale={[9.90617847442627, 9.906179428100586, 9.906183242797852]} 
+        />
       </group>
-      <group ref={el => balloonGroupRefs.current.middle1 = el} position={[-0.138, 2.253, 0.345]} rotation={[-1.235, 0.129, -1.113]} scale={initialGroupScale}>
-        <mesh geometry={nodes.Middle1C.geometry} material={coloredMaterials.Middle1C || materials['Metallic.002']} onClick={(e) => handleBalloonClick('middle1', e)} visible={balloonTypes.middle1 === 'C'} userData={{ balloonId: 'middle1' }} />
-        <mesh geometry={nodes.Middle1A.geometry} material={coloredMaterials.Middle1A || materials['Latex.002']} onClick={(e) => handleBalloonClick('middle1', e)} visible={balloonTypes.middle1 === 'A'} position={[-0.0000, -0.692, 0.878]} rotation={[1.895, 0.766, -3.078]} scale={1.673} userData={{ balloonId: 'middle1' }} />
-        <mesh geometry={nodes.Middle1B.geometry} material={coloredMaterials.Middle1B || materials['Metallic.002']} onClick={(e) => handleBalloonClick('middle1', e)} visible={balloonTypes.middle1 === 'B'} scale={typeBScale} rotation={[-2.752, 0.05, -0.251]} position={[0.537, 1.501, -2.51]} userData={{ balloonId: 'middle1' }} />
-        <mesh geometry={nodes.Middle1BodyStrings.geometry} material={materials['whiteString.002']} position={[0.583, 1.473, -2.677]} rotation={[-2.751, 0.251, -0.75]} scale={9.906} />
+
+      {/* Middle1 Balloon Group (Node 9) */}
+      <group 
+        position={[-0.1384275257587433, 2.18, 0.3450603485107422]}
+        quaternion={[-0.5186266303062439, -0.26047393679618835, -0.4614647626876831, 0.6709917783737183]} 
+        scale={[0.2603088617324829, 0.2603088319301605, 0.2603088617324829]}
+      >
+        {/* Middle1C Mesh (Node 9 - Identity relative to parent) */}
+        <mesh 
+            geometry={nodes.Middle1C.geometry} 
+            material={coloredMaterials.Middle1C || materials['Metallic.002']} 
+            onClick={(e) => handleBalloonClick('middle1', e)} 
+            visible={balloonTypes.middle1 === 'C'} 
+            userData={{ balloonId: 'middle1' }}
+            position={[0,0,0]} quaternion={[0,0,0,1]} scale={[1,1,1]} 
+        />
+        {/* Middle1A Mesh (Node 6) */}
+        <mesh 
+          geometry={nodes.Middle1A.geometry} 
+          material={coloredMaterials.Middle1A || materials['Latex.002']} 
+          onClick={(e) => handleBalloonClick('middle1', e)} 
+          visible={balloonTypes.middle1 === 'A'}
+          position={[-0.0912342369556427, -0.38293343782424927, 0.5434581637382507]}
+          quaternion={[-0.19423280656337738, 0.7596822381019592, -0.531437873840332, 0.3205156922340393]}
+          scale={[1.6725479364395142, 1.6725493669509888, 1.6725493669509888]}
+          userData={{ balloonId: 'middle1' }}
+        />
+        {/* Middle1B Mesh (Node 7) */}
+        <mesh 
+          geometry={nodes.Middle1B.geometry} 
+          material={coloredMaterials.Middle1B || materials['Metallic.002']} 
+          onClick={(e) => handleBalloonClick('middle1', e)} 
+          visible={balloonTypes.middle1 === 'B'}
+          position={[0.5371164679527283, 1.5005285739898682, -2.5103509426116943]}
+          quaternion={[-0.9737213253974915, -0.11777164787054062, -0.048612192273139954, 0.18876822292804718]}
+          scale={[9.90617847442627, 9.906182289123535, 9.906181335449219]}
+          userData={{ balloonId: 'middle1' }}
+        />
+        {/* Middle1BodyStrings Mesh (Node 8) */}
+        <mesh 
+            geometry={nodes.Middle1BodyStrings.geometry} 
+            material={materials['whiteString.002']} 
+            position={[0.5830346941947937, 1.3726011514663696, -2.676815986633301]} 
+            quaternion={[-0.9145919680595398, -0.33365803956985474, -0.1847616285085678, 0.13437709212303162]} 
+            scale={[9.906180381774902, 9.906180381774902, 9.906182289123535]} 
+        />
       </group>
-      <group ref={el => balloonGroupRefs.current.middle2 = el} position={[0.562, 2.258, -0.144]} rotation={[-1.351, 0.69, -2.351]} scale={initialGroupScale}>
-        <mesh geometry={nodes.Middle2C.geometry} material={coloredMaterials.Middle2C || materials['Metallic.004']} onClick={(e) => handleBalloonClick('middle2', e)} visible={balloonTypes.middle2 === 'C'} userData={{ balloonId: 'middle2' }} />
-        <mesh geometry={nodes.Middle2A.geometry} material={coloredMaterials.Middle2A || materials['Latex.003']} onClick={(e) => handleBalloonClick('middle2', e)} visible={balloonTypes.middle2 === 'A'} position={[-0.1001, -0.062, 0.878]} rotation={[1.895, 0.766, -3.078]} scale={1.673} userData={{ balloonId: 'middle2' }} />
-        <mesh geometry={nodes.Middle2B.geometry} material={coloredMaterials.Middle2B || materials['Metallic.004']} onClick={(e) => handleBalloonClick('middle2', e)} visible={balloonTypes.middle2 === 'B'} scale={typeBScale} rotation={[-2.752, 0.05, -0.251]} position={[0.537, 1.501, -2.51]} userData={{ balloonId: 'middle2' }} />
-        <mesh geometry={nodes.Middle2BodyStrings.geometry} material={materials['whiteString.003']} position={[0.047, 1.916, -2.53]} rotation={[-2.668, -0.1, -1.352]} scale={9.906} />
+
+      {/* Middle2 Balloon Group (Node 13) */}
+      <group 
+        position={[0.5623307228088379, 2.15, -0.1444704681634903]}
+        quaternion={[-0.47021302580833435, -0.4413040578365326, -0.7592545747756958, 0.08765258640050888]} 
+        scale={[0.2603088319301605, 0.26030880212783813, 0.2603088319301605]}
+      >
+        {/* Middle2C Mesh (Node 13 - Identity relative to parent) */}
+        <mesh 
+            geometry={nodes.Middle2C.geometry} 
+            material={coloredMaterials.Middle2C || materials['Metallic.004']} 
+            onClick={(e) => handleBalloonClick('middle2', e)} 
+            visible={balloonTypes.middle2 === 'C'} 
+            userData={{ balloonId: 'middle2' }} 
+            position={[0,0,0]} quaternion={[0,0,0,1]} scale={[1,1,1]} 
+        />
+        {/* Middle2A Mesh (Node 10) */}
+        <mesh 
+          geometry={nodes.Middle2A.geometry} 
+          material={coloredMaterials.Middle2A || materials['Latex.003']} 
+          onClick={(e) => handleBalloonClick('middle2', e)} 
+          visible={balloonTypes.middle2 === 'A'}
+          position={[-0.0890360176563263, -0.1562219262123108, 0.644880473613739]}
+          quaternion={[-0.19423280656337738, 0.7596822381019592, -0.531437873840332, 0.3205157220363617]}
+          scale={[1.6725479364395142, 1.6725482940673828, 1.6725480556488037]}
+          userData={{ balloonId: 'middle2' }}
+        />
+        {/* Middle2B Mesh (Node 11) */}
+        <mesh 
+          geometry={nodes.Middle2B.geometry} 
+          material={coloredMaterials.Middle2B || materials['Metallic.004']} 
+          onClick={(e) => handleBalloonClick('middle2', e)} 
+          visible={balloonTypes.middle2 === 'B'}
+          position={[0.5371164083480835, 1.5005290508270264, -2.510349988937378]}
+          quaternion={[-0.9737213253974915, -0.11777165532112122, -0.04861219599843025, 0.18876823782920837]}
+          scale={[9.90617847442627, 9.906181335449219, 9.906180381774902]}
+          userData={{ balloonId: 'middle2' }}
+        />
+        {/* Middle2BodyStrings Mesh (Node 12) */}
+        <mesh 
+            geometry={nodes.Middle2BodyStrings.geometry} 
+            material={materials['whiteString.003']} 
+            position={[0.04688362777233124, 1.8155897855758667, -2.5300848484039307]} 
+            quaternion={[-0.7502310872077942, -0.6164413094520569, -0.10864118486642838, 0.2129569798707962]} 
+            scale={[9.906182289123535, 9.90617847442627, 9.906181335449219]} 
+        />
       </group>
-      <group ref={el => balloonGroupRefs.current.middle3 = el} position={[-0.199, 2.206, -0.567]} rotation={[-1.655, -0.353, 3.008]} scale={initialGroupScale}>
-        <mesh geometry={nodes.Middle3C.geometry} material={coloredMaterials.Middle3C || materials['Metallic.005']} onClick={(e) => handleBalloonClick('middle3', e)} visible={balloonTypes.middle3 === 'C'} userData={{ balloonId: 'middle3' }} />
-        <mesh geometry={nodes.Middle3A.geometry} material={coloredMaterials.Middle3A || materials['Latex.004']} onClick={(e) => handleBalloonClick('middle3', e)} visible={balloonTypes.middle3 === 'A'} position={[-0.0001, -0.392, 0.878]} rotation={[1.895, 0.766, -3.078]} scale={1.673} userData={{ balloonId: 'middle3' }} />
-        <mesh geometry={nodes.Middle3B.geometry} material={coloredMaterials.Middle3B || materials['Metallic.005']} onClick={(e) => handleBalloonClick('middle3', e)} visible={balloonTypes.middle3 === 'B'} scale={typeBScale} rotation={[-2.752, 0.05, -0.251]} position={[0.537, 1.501, -2.51]} userData={{ balloonId: 'middle3' }} />
-        <mesh geometry={nodes.Middle3BodyStrings.geometry} material={materials['whiteString.004']} position={[0.536, 1.874, -3.049]} rotation={[-2.857, 0.218, -0.968]} scale={9.906} />
+
+      {/* Middle3 Balloon Group (Node 17) */}
+      <group 
+        position={[-0.19880028069019318, 2.206026077270508, -0.5673555135726929]} 
+        quaternion={[0.16680897772312164, -0.7151645421981812, -0.6734709739685059, 0.08456537127494812]} 
+        scale={[0.2603088617324829, 0.2603088319301605, 0.2603088617324829]}
+      >
+        {/* Middle3C Mesh (Node 17 - Identity relative to parent) */}
+        <mesh 
+            geometry={nodes.Middle3C.geometry} 
+            material={coloredMaterials.Middle3C || materials['Metallic.005']} 
+            onClick={(e) => handleBalloonClick('middle3', e)} 
+            visible={balloonTypes.middle3 === 'C'} 
+            userData={{ balloonId: 'middle3' }} 
+            position={[0,0,0]} quaternion={[0,0,0,1]} scale={[1,1,1]} 
+        />
+        {/* Middle3A Mesh (Node 14) */}
+        <mesh 
+          geometry={nodes.Middle3A.geometry} 
+          material={coloredMaterials.Middle3A || materials['Latex.004']} 
+          onClick={(e) => handleBalloonClick('middle3', e)} 
+          visible={balloonTypes.middle3 === 'A'}
+          position={[-0.016502588987350464, -0.22198547422885895, 0.5780348777770996]}
+          quaternion={[-0.19423283636569977, 0.7596822381019592, -0.531437873840332, 0.3205156922340393]}
+          scale={[1.6725479364395142, 1.672550916671753, 1.6725504398345947]}
+          userData={{ balloonId: 'middle3' }}
+        />
+        {/* Middle3B Mesh (Node 15) */}
+        <mesh 
+          geometry={nodes.Middle3B.geometry} 
+          material={coloredMaterials.Middle3B || materials['Metallic.005']} 
+          onClick={(e) => handleBalloonClick('middle3', e)} 
+          visible={balloonTypes.middle3 === 'B'}
+          position={[0.5371166467666626, 1.5005289316177368, -2.5103509426116943]}
+          quaternion={[-0.9737213253974915, -0.11777161806821823, -0.04861218482255936, 0.18876822292804718]}
+          scale={[9.906177520751953, 9.906181335449219, 9.906182289123535]}
+          userData={{ balloonId: 'middle3' }}
+        />
+        {/* Middle3BodyStrings Mesh (Node 16) */}
+        <mesh 
+            geometry={nodes.Middle3BodyStrings.geometry} 
+            material={materials['whiteString.004']} 
+            position={[0.5359958410263062, 1.7737566232681274, -3.0485329627990723]} 
+            quaternion={[-0.8781327605247498, -0.4442944824695587, -0.16103455424308777, 0.07452107965946198]} 
+            scale={[9.906180381774902, 9.90617847442627, 9.906180381774902]} 
+        />
       </group>
-      <group ref={el => balloonGroupRefs.current.bottom1 = el} position={[0.212, 1.25, 0.506]} rotation={[-1.257, 0.295, -0.309]} scale={initialGroupScale}>
-        <mesh geometry={nodes.Bottom1C.geometry} material={coloredMaterials.Bottom1C || materials['Metallic.006']} onClick={(e) => handleBalloonClick('bottom1', e)} visible={balloonTypes.bottom1 === 'C'} userData={{ balloonId: 'bottom1' }} />
-        <mesh geometry={nodes.Bottom1A.geometry} material={coloredMaterials.Bottom1A || materials['Latex.005']} onClick={(e) => handleBalloonClick('bottom1', e)} visible={balloonTypes.bottom1 === 'A'} position={[-0.0001, -0.392, 0.878]} rotation={[1.895, 0.766, -3.078]} scale={1.673} userData={{ balloonId: 'bottom1' }} />
-        <mesh geometry={nodes.Bottom1B.geometry} material={coloredMaterials.Bottom1B || materials['Metallic.006']} onClick={(e) => handleBalloonClick('bottom1', e)} visible={balloonTypes.bottom1 === 'B'} scale={typeBScale} rotation={[-2.752, 0.05, -0.251]} position={[0.537, 1.501, -2.51]} userData={{ balloonId: 'bottom1' }} />
-        <mesh geometry={nodes.Bottom1ABodyStrings.geometry} material={materials['whiteString.005']} position={[0.431, 1.817, -2.654]} rotation={[-2.6, 0.145, -0.899]} scale={9.906} />
+
+      {/* Bottom1 Balloon Group (Node 21) */}
+      <group 
+        position={[0.2123560756444931, 1.349532127380371, 0.5055731534957886]} 
+        quaternion={[-0.5929031372070312, 0.027995053678750992, -0.20880503952503204, 0.777227520942688]} 
+        scale={[0.2603088617324829, 0.26030880212783813, 0.2603088617324829]}
+      >
+        {/* Bottom1C Mesh (Node 21 - Identity relative to parent) */}
+        <mesh 
+            geometry={nodes.Bottom1C.geometry} 
+            material={coloredMaterials.Bottom1C || materials['Metallic.006']} 
+            onClick={(e) => handleBalloonClick('bottom1', e)} 
+            visible={balloonTypes.bottom1 === 'C'} 
+            userData={{ balloonId: 'bottom1' }} 
+            position={[0,0,0]} quaternion={[0,0,0,1]} scale={[1,1,1]} 
+        />
+        {/* Bottom1A Mesh (Node 18) */}
+        <mesh 
+          geometry={nodes.Bottom1A.geometry} 
+          material={coloredMaterials.Bottom1A || materials['Latex.005']} 
+          onClick={(e) => handleBalloonClick('bottom1', e)} 
+          visible={balloonTypes.bottom1 === 'A'}
+          position={[0.0058945417404174805, -0.4167436361312866, 0.29010009765625]}
+          quaternion={[-0.22201432287693024, 0.7672784924507141, -0.4980023205280304, 0.33761972188949585]}
+          scale={[1.6725479364395142, 1.6725482940673828, 1.6725480556488037]}
+          userData={{ balloonId: 'bottom1' }}
+        />
+        {/* Bottom1B Mesh (Node 20) */}
+        <mesh 
+          geometry={nodes.Bottom1B.geometry} 
+          material={coloredMaterials.Bottom1B || materials['Metallic.006']} 
+          onClick={(e) => handleBalloonClick('bottom1', e)} 
+          visible={balloonTypes.bottom1 === 'B'}
+          position={[0.5371162295341492, 1.5005286931991577, -2.5103490352630615]}
+          quaternion={[-0.9737213253974915, -0.11777191609144211, -0.04861222580075264, 0.18876822292804718]}
+          scale={[9.906177520751953, 9.906181335449219, 9.906182289123535]}
+          userData={{ balloonId: 'bottom1' }}
+        />
+        {/* Bottom1ABodyStrings Mesh (Node 19) */}
+        <mesh 
+            geometry={nodes.Bottom1ABodyStrings.geometry}
+            material={materials['whiteString.005']} 
+            position={[0.43146640062332153, 1.6171449422836304, -2.6536011695861816]} 
+            quaternion={[-0.8740312457084656, -0.4000324308872223, -0.17880898714065552, 0.20993106067180634]} 
+            scale={[9.906179428100586, 9.906179428100586, 9.906180381774902]} 
+        />
       </group>
-      <group ref={el => balloonGroupRefs.current.bottom2 = el} position={[0.372, 1.217, -0.462]} rotation={[-2.069, 0.624, -1.101]} scale={initialGroupScale}>
-        <mesh geometry={nodes.Bottom2C.geometry} material={coloredMaterials.Bottom2C || materials['Metallic.007']} onClick={(e) => handleBalloonClick('bottom2', e)} visible={balloonTypes.bottom2 === 'C'} userData={{ balloonId: 'bottom2' }} />
-        <mesh geometry={nodes.Bottom2A.geometry} material={coloredMaterials.Bottom2A || materials['Latex.006']} onClick={(e) => handleBalloonClick('bottom2', e)} visible={balloonTypes.bottom2 === 'A'} position={[-0.0001, -0.392, 0.878]} rotation={[1.895, 0.766, -3.078]} scale={1.673} userData={{ balloonId: 'bottom2' }} />
-        <mesh geometry={nodes.Bottom2B.geometry} material={coloredMaterials.Bottom2B || materials['Metallic.007']} onClick={(e) => handleBalloonClick('bottom2', e)} visible={balloonTypes.bottom2 === 'B'} scale={typeBScale} rotation={[-2.752, 0.05, -0.251]} position={[0.537, 1.501, -2.51]} userData={{ balloonId: 'bottom2' }} />
-        <mesh geometry={nodes.Bottom1ABodyStrings001.geometry} material={materials['whiteString.006']} position={[0.591, 1.662, -2.547]} rotation={[-2.813, 0.127, -1.047]} scale={9.906} />
+
+      {/* Bottom2 Balloon Group (Node 25) */}
+      <group 
+        position={[0.37152835726737976, 1.3166108131408691, -0.4616577923297882]} 
+        quaternion={[-0.7792777419090271, -0.2943854033946991, -0.4792940020561218, 0.2762981355190277]} 
+        scale={[0.2603088319301605, 0.26030880212783813, 0.2603088319301605]}
+      >
+        {/* Bottom2C Mesh (Node 25 - Identity relative to parent) */}
+        <mesh 
+            geometry={nodes.Bottom2C.geometry} 
+            material={coloredMaterials.Bottom2C || materials['Metallic.007']} 
+            onClick={(e) => handleBalloonClick('bottom2', e)} 
+            visible={balloonTypes.bottom2 === 'C'} 
+            userData={{ balloonId: 'bottom2' }} 
+            position={[0,0,0]} quaternion={[0,0,0,1]} scale={[1,1,1]} 
+        />
+        {/* Bottom2A Mesh (Node 23) */}
+        <mesh 
+          geometry={nodes.Bottom2A.geometry} 
+          material={coloredMaterials.Bottom2A || materials['Latex.006']} 
+          onClick={(e) => handleBalloonClick('bottom2', e)} 
+          visible={balloonTypes.bottom2 === 'A'}
+          position={[-0.04849724471569061, -0.07529416680335999, 0.7450257539749146]}
+          quaternion={[-0.20253704488277435, 0.715378999710083, -0.5822332501411438, 0.32896217703819275]}
+          scale={[1.672547698020935, 1.6725490093231201, 1.6725491285324097]}
+          userData={{ balloonId: 'bottom2' }}
+        />
+        {/* Bottom2B Mesh (Node 24) */}
+        <mesh 
+          geometry={nodes.Bottom2B.geometry} 
+          material={coloredMaterials.Bottom2B || materials['Metallic.007']} 
+          onClick={(e) => handleBalloonClick('bottom2', e)} 
+          visible={balloonTypes.bottom2 === 'B'}
+          position={[0.5371158719062805, 1.5005284547805786, -2.510349988937378]}
+          quaternion={[-0.9737213253974915, -0.11777163296937943, -0.04861220344901085, 0.18876822292804718]}
+          scale={[9.906177520751953, 9.906180381774902, 9.906181335449219]}
+          userData={{ balloonId: 'bottom2' }}
+        />
+        {/* Bottom2BodyStrings Mesh (Node 22 - 'Bottom1ABodyStrings.001' in GLTF) */}
+        <mesh 
+            geometry={nodes.Bottom1ABodyStrings001.geometry}
+            material={materials['whiteString.006']} 
+            position={[0.5908519625663757, 1.46197509765625, -2.5466675758361816]} 
+            quaternion={[-0.8580161929130554, -0.4830014705657959, -0.13580535352230072, 0.10988485813140869]} 
+            scale={[9.90617847442627, 9.906180381774902, 9.906180381774902]} 
+        />
       </group>
-      <group ref={el => balloonGroupRefs.current.bottom3 = el} position={[-0.453, 1.267, -0.174]} rotation={[-1.349, -0.318, -2.183]} scale={initialGroupScale}>
-        <mesh geometry={nodes.Bottom3C.geometry} material={coloredMaterials.Bottom3C || materials['Metallic.008']} onClick={(e) => handleBalloonClick('bottom3', e)} visible={balloonTypes.bottom3 === 'C'} userData={{ balloonId: 'bottom3' }} />
-        <mesh geometry={nodes.Bottom3A.geometry} material={coloredMaterials.Bottom3A || materials['Latex.007']} onClick={(e) => handleBalloonClick('bottom3', e)} visible={balloonTypes.bottom3 === 'A'} position={[-0.0001, -0.392, 0.878]} rotation={[1.895, 0.766, -3.078]} scale={1.673} userData={{ balloonId: 'bottom3' }} />
-        <mesh geometry={nodes.Bottom3B.geometry} material={coloredMaterials.Bottom3B || materials['Metallic.008']} onClick={(e) => handleBalloonClick('bottom3', e)} visible={balloonTypes.bottom3 === 'B'} scale={typeBScale} rotation={[-2.752, 0.05, -0.251]} position={[0.537, 1.501, -2.51]} userData={{ balloonId: 'bottom3' }} />
-        <mesh geometry={nodes.Bottom3BodyStrings.geometry} material={materials['whiteString.007']} position={[0.491, 1.78, -2.5]} rotation={[-2.507, 0.271, -0.957]} scale={9.906} />
+
+      {/* Bottom3 Balloon Group (Node 29) */}
+      <group 
+        position={[-0.4534139335155487, 1.3669781684875488, -0.17420901358127594]} 
+        quaternion={[-0.1747380495071411, -0.6042752265930176, -0.6385438442230225, 0.4433732032775879]} 
+        scale={[0.2603088617324829, 0.2603088319301605, 0.2603088617324829]}
+      >
+        {/* Bottom3C Mesh (Node 29 - Identity relative to parent) */}
+        <mesh 
+            geometry={nodes.Bottom3C.geometry} 
+            material={coloredMaterials.Bottom3C || materials['Metallic.008']} 
+            onClick={(e) => handleBalloonClick('bottom3', e)} 
+            visible={balloonTypes.bottom3 === 'C'} 
+            userData={{ balloonId: 'bottom3' }} 
+            position={[0,0,0]} quaternion={[0,0,0,1]} scale={[1,1,1]} 
+        />
+        {/* Bottom3A Mesh (Node 26) */}
+        <mesh 
+          geometry={nodes.Bottom3A.geometry} 
+          material={coloredMaterials.Bottom3A || materials['Latex.007']} 
+          onClick={(e) => handleBalloonClick('bottom3', e)} 
+          visible={balloonTypes.bottom3 === 'A'}
+          position={[-0.09123390913009644, -0.3829333186149597, 0.5434600114822388]}
+          quaternion={[-0.19423280656337738, 0.7596822381019592, -0.531437873840332, 0.3205157220363617]}
+          scale={[1.6725480556488037, 1.6725484132766724, 1.6725480556488037]}
+          userData={{ balloonId: 'bottom3' }}
+        />
+        {/* Bottom3B Mesh (Node 27) */}
+        <mesh 
+          geometry={nodes.Bottom3B.geometry} 
+          material={coloredMaterials.Bottom3B || materials['Metallic.008']} 
+          onClick={(e) => handleBalloonClick('bottom3', e)} 
+          visible={balloonTypes.bottom3 === 'B'}
+          position={[0.5371164679527283, 1.5005286931991577, -2.510349750518799]}
+          quaternion={[-0.9737213253974915, -0.11777165532112122, -0.04861218482255936, 0.188768208026886]}
+          scale={[9.90617847442627, 9.906182289123535, 9.906182289123535]}
+          userData={{ balloonId: 'bottom3' }}
+        />
+        {/* Bottom3BodyStrings Mesh (Node 28) */}
+        <mesh 
+            geometry={nodes.Bottom3BodyStrings.geometry} 
+            material={materials['whiteString.007']} 
+            position={[0.49142906069755554, 1.5801434516906738, -2.4997031688690186]} 
+            quaternion={[-0.8551163077354431, -0.3958855867385864, -0.25628969073295593, 0.21532876789569855]} 
+            scale={[9.906180381774902, 9.906179428100586, 9.906182289123535]} 
+        />
       </group>
     </group>
   )
