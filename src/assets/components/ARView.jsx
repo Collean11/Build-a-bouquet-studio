@@ -41,21 +41,6 @@ const ARView = ({ modelBlobUrl, handleExitAR, arError, setArError, isLoading: in
     }, [modelBlobUrl]); // Re-run if the model URL changes
     // --- End Workaround --- 
 
-    // Handler for the custom Launch AR button within this component
-    const handleLaunchAR = () => {
-        const modelViewerElement = document.querySelector('model-viewer');
-        if (modelViewerElement) {
-            console.log('ARView: Launch button clicked, attempting to activate AR...');
-            modelViewerElement.activateAR().catch((error) => {
-                console.error('ARView: Launch button activation failed:', error);
-                setArError('Failed to start AR. Device might not be supported or permission denied.');
-            });
-        } else {
-            console.error('ARView: Could not find model-viewer element for launch button activation.');
-            setArError('Failed to find AR viewer component.');
-        }
-    };
-
     useEffect(() => {
         // Reset viewer loading state when the model URL changes (if component is reused)
         setIsViewerLoading(true);
@@ -100,31 +85,6 @@ const ARView = ({ modelBlobUrl, handleExitAR, arError, setArError, isLoading: in
                 Exit AR
             </button>
 
-            {/* Custom Launch AR Button (only shown when viewer is loaded) */} 
-            {!isViewerLoading && (
-                <button
-                    onClick={handleLaunchAR}
-                    style={{
-                        position: 'fixed',
-                        bottom: '20px',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        zIndex: 1005,
-                        padding: '12px 24px',
-                        backgroundColor: '#ff69b4',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
-                        fontSize: '16px',
-                        fontWeight: 'bold'
-                    }}
-                >
-                    🚀 Launch AR
-                </button>
-            )}            
-            
             {/* Error Display */}
             {arError && (
                 <div className="ar-error" style={{
@@ -187,9 +147,9 @@ const ARView = ({ modelBlobUrl, handleExitAR, arError, setArError, isLoading: in
                         alt="AR Balloon Bouquet"
                         ar
                         ar-modes="webxr quick-look scene-viewer" // Keep all modes
-                        camera-controls // Enable controls for viewing before launching AR
+                        camera-controls
                         shadow-intensity="1"
-                        auto-rotate // Keep auto-rotate for preview
+                        auto-rotate
                         camera-orbit="45deg 55deg 2.5m"
                         min-camera-orbit="auto auto 0.1m"
                         max-camera-orbit="auto auto 10m"

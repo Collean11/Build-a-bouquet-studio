@@ -5,8 +5,8 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import BalloonBouquetV4 from './BalloonBouquetV4';
 import { Suspense } from 'react';
-// Import loadable
-import loadable from '@loadable/component'; 
+// Import directly
+import ARView from './ARView';
 // Note: We're using Three.js from both @react-three/fiber and @google/model-viewer
 // This causes a warning about multiple instances, but it's necessary for our use case
 // as we need both libraries for different features (3D editing and AR viewing)
@@ -15,12 +15,6 @@ import { Environment } from '@react-three/drei';
 import { MeshReflectorMaterial } from '@react-three/drei';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase';
-
-// --- LAZY LOAD THE AR VIEW --- 
-const LazyARView = loadable(() => import('./ARView'), {
-  fallback: <div style={{ /* Basic loading text */ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'white', zIndex: 1000 }}>Loading AR Viewer...</div>, 
-});
-// --- END LAZY LOAD ---
 
 const balloonTypeOptions = [
     { name: 'Latex', value: 'A' },
@@ -208,92 +202,80 @@ const Configurator = () => {
     }, [showAR, modelBlobUrl]);
 
     const handleArView = async () => {
+        // Restore check for bouquetGroupRef.current
         if (!bouquetGroupRef.current) { 
             console.error('AR: Bouquet group ref not ready');
+            setArError('AR Error: Model reference not ready.');
+            setIsLoading(false);
             return;
         }
 
         try {
             setArError(null);
             setIsLoading(true);
-            console.log('AR: Starting model export...');
-            
+            console.log('AR: Starting bouquet model export...');
+
             const exporter = new GLTFExporter();
-            const objectToExport = bouquetGroupRef.current; 
+            const objectToExport = bouquetGroupRef.current; // Use the bouquet group
             
-            // --- Add Debugging --- 
             console.log('AR DEBUG: Object to export (bouquetGroupRef.current):', objectToExport);
+            
+            console.log('AR DEBUG: Skipping material simplification. Starting exporter.parse...');
 
-            // Explicitly check if the object is valid and has traverse method
-            if (!objectToExport || typeof objectToExport.traverse !== 'function') {
-                console.error('AR DEBUG: Invalid object for export. bouquetGroupRef.current is not a traversable Object3D:', objectToExport);
-                // Provide a more specific error message
-                setArError('AR Error: Cannot find the 3D model data to export.'); 
-                setIsLoading(false); // Stop loading indicator
-                return; // Stop execution
-            }
-            // --- End Debugging ---
-
-            console.log('AR DEBUG: Object seems valid, attempting traverse...'); // Log before traverse
-            objectToExport.traverse((object) => { // This is the line (~236) that was failing 
-                if (object.isMesh) {
-                    // Ensure materials are suitable for GLB export if needed
-                    // We might need to temporarily swap materials or handle this
-                    object.castShadow = true; 
-                    object.receiveShadow = true;
-                }
-            });
-
-            console.log('AR DEBUG: Traverse completed.'); // Log after traverse
-
-            const gltf = await new Promise((resolve, reject) => {
+            let gltf;
+            gltf = await new Promise((resolve, reject) => {
                 exporter.parse(
-                    objectToExport,
-                    (gltf) => {
-                        console.log('AR: Model exported successfully');
-                        resolve(gltf);
-                    },
-                    (error) => {
-                        console.error('AR: GLTFExporter parse error', error);
-                        reject(error);
-                    },
-                    { 
+                    objectToExport, // Export the bouquet group
+                    (gltfData) => {
+                        console.log('AR DEBUG: GLTFExporter.parse successful for bouquet.', gltfData); 
+                        resolve(gltfData); 
+                    }, 
+                    (error) => { 
+                        console.error('AR: GLTFExporter parse error for bouquet', error); 
+                        reject(error); 
+                    }, 
+                    { // Restore options from before material simplification test
                         binary: true, 
                         trs: false,
                         onlyVisible: true,
-                        embedImages: true,
+                        embedImages: true, // Keep true if textures needed
                         maxTextureSize: 1024
                     }
                 );
             });
+            
+            if (!(gltf instanceof ArrayBuffer)) {
+                console.error('AR Error: Export did not produce ArrayBuffer');
+                throw new Error("GLTFExporter failed to produce valid data.");
+            }
 
-            const timestamp = Date.now();
-            const filename = `ar-model-${timestamp}.glb`;
-            const storageRef = ref(storage, `ar-models/${filename}`);
+            console.log(`AR DEBUG: Exported Bouquet GLB size (ArrayBuffer): ${gltf.byteLength} bytes`);
             const blob = new Blob([gltf], { type: 'model/gltf-binary' });
-            
-            console.log('AR: Uploading to Firebase Storage...');
-            await uploadBytes(storageRef, blob, {
-                contentType: 'model/gltf-binary',
-                cacheControl: 'public, max-age=300'
-            });
-            console.log('AR: Upload complete');
-            
-            const downloadUrl = await getDownloadURL(storageRef);
-            console.log('AR: Model URL created:', downloadUrl);
-            setModelBlobUrl(downloadUrl); // Set the URL
+            console.log(`AR DEBUG: Bouquet Blob size before upload: ${blob.size} bytes`);
 
-            // --- NO MORE DELAY NEEDED HERE --- 
-            // The lazy loading handles the delay
-            console.log('AR: Setting showAR to true (will trigger lazy load).');
+            // --- Upload to Firebase Storage ---
+            const timestamp = Date.now();
+            const filename = `ar-model-${timestamp}.glb`; 
+            const storageRef = ref(storage, `ar-models/${filename}`);
+
+            console.log('AR: Uploading Bouquet GLB to Firebase Storage...');
+            await uploadBytes(storageRef, blob);
+            console.log('AR: Bouquet Upload complete');
+
+            const downloadURL = await getDownloadURL(storageRef);
+            console.log('AR: Bouquet Model URL created:', downloadURL);
+
+            setModelBlobUrl(downloadURL);
             setShowAR(true);
-            // --- END REMOVED DELAY ---
+            console.log('AR: Setting showAR to true.');
 
         } catch (error) {
             console.error('AR: Export failed', error);
-            setArError('Failed to prepare model for AR view.');
+            const errorMessage = error?.message || 'An unknown error occurred during AR export.';
+            setArError(`AR Export Error: ${errorMessage}`);
         } finally {
             setIsLoading(false);
+            console.log('AR: Export process finished (or failed).');
         }
     };
 
@@ -977,7 +959,7 @@ const Configurator = () => {
                             position: 'fixed',
                             ...(isMobileView ? {
                                 top: '20px',
-                                right: '140px'
+                                left: '20px'
                             } : {
                                 top: '20px',
                                 right: '20px'
@@ -1180,8 +1162,7 @@ const Configurator = () => {
                                         flexShrink: 0
                                     }}>
                                         <button 
-                                            onClick={() => setCurrentCardIndex(prev => Math.max(0, prev - 1))}
-                                            disabled={currentCardIndex === 0}
+                                            onClick={() => setCurrentCardIndex(prev => (prev - 1 + carouselCards.length) % carouselCards.length)}
                                             style={{
                                                 background: 'transparent',
                                                 border: 'none',
@@ -1194,10 +1175,9 @@ const Configurator = () => {
                                                 fontSize: '16px',
                                                 textAlign: 'center',
                                                 color: '#333',
-                                                opacity: currentCardIndex === 0 ? 0.5 : 1,
                                                 transition: 'background 0.2s ease'
                                             }}
-                                            onMouseEnter={(e) => { if (currentCardIndex !== 0) e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)'; }}
+                                            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)'; }}
                                             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                                         >
                                             {'<'}
@@ -1206,8 +1186,7 @@ const Configurator = () => {
                                             {carouselCards[currentCardIndex].title}
                                         </h3>
                                         <button 
-                                            onClick={() => setCurrentCardIndex(prev => Math.min(carouselCards.length - 1, prev + 1))}
-                                            disabled={currentCardIndex === carouselCards.length - 1}
+                                            onClick={() => setCurrentCardIndex(prev => (prev + 1) % carouselCards.length)}
                                             style={{
                                                 background: 'transparent',
                                                 border: 'none',
@@ -1220,10 +1199,9 @@ const Configurator = () => {
                                                 fontSize: '16px',
                                                 textAlign: 'center',
                                                 color: '#333',
-                                                opacity: currentCardIndex === carouselCards.length - 1 ? 0.5 : 1,
                                                 transition: 'background 0.2s ease'
                                             }}
-                                            onMouseEnter={(e) => { if (currentCardIndex !== carouselCards.length - 1) e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)'; }}
+                                            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)'; }}
                                             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                                         >
                                             {'>'}
@@ -1266,7 +1244,6 @@ const Configurator = () => {
                                         WebkitOverflowScrolling: 'touch',
                                         scrollbarWidth: 'none',
                                         msOverflowStyle: 'none',
-                                        '&::-webkit-scrollbar': { display: 'none' }
                                     }}>
                                         {carouselCards[currentCardIndex].content({
                                             selectedBalloon, setSelectedBalloon, balloonTypes, toggleBalloonType,
@@ -1292,8 +1269,7 @@ const Configurator = () => {
                                         flexShrink: 0 
                                     }}>
                                         <button 
-                                            onClick={() => setCurrentCardIndex(prev => Math.max(0, prev - 1))}
-                                            disabled={currentCardIndex === 0}
+                                            onClick={() => setCurrentCardIndex(prev => (prev - 1 + carouselCards.length) % carouselCards.length)}
                                             style={{
                                                 background: 'transparent',
                                                 border: 'none',
@@ -1326,8 +1302,7 @@ const Configurator = () => {
                                             {carouselCards[currentCardIndex].title}
                                         </h3>
                                         <button 
-                                            onClick={() => setCurrentCardIndex(prev => Math.min(carouselCards.length - 1, prev + 1))}
-                                            disabled={currentCardIndex === carouselCards.length - 1}
+                                            onClick={() => setCurrentCardIndex(prev => (prev + 1) % carouselCards.length)}
                                             style={{
                                                 background: 'transparent',
                                                 border: 'none',
@@ -1406,19 +1381,18 @@ const Configurator = () => {
                 </>
             )}
 
-            {/* --- RENDER LAZY AR VIEW --- */}
-            {/* Render the lazy component when showAR and modelBlobUrl are ready */}
-            {/* Pass necessary props down */}
+            {/* --- RENDER AR VIEW DIRECTLY --- */}
+            {/* Render the component directly when showAR and modelBlobUrl are ready */}
             {showAR && modelBlobUrl && (
-                <LazyARView 
+                <ARView // Use direct import
                     modelBlobUrl={modelBlobUrl}
-                    handleExitAR={handleExitAR} // Pass exit handler down
-                    arError={arError}           // Pass error state down
-                    setArError={setArError}     // Pass error setter down
-                    isLoading={isLoading}       // Pass loading state (though might not be needed inside)
+                    handleExitAR={handleExitAR} 
+                    arError={arError}           
+                    setArError={setArError}     
+                    isLoading={isLoading}       
                 />
             )}
-            {/* --- END RENDER LAZY AR VIEW --- */} 
+            {/* --- END RENDER AR VIEW DIRECTLY --- */}
 
             <style>
                 {`
