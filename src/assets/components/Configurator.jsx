@@ -1,12 +1,12 @@
 import { useCustomization } from "../../contexts/Customization";
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, useGLTF } from '@react-three/drei';
 import BalloonBouquetV4 from './BalloonBouquetV4';
 import { Suspense } from 'react';
 // Import directly
-import ARView from './ARView';
+// import ARView from './ARView';
 // Note: We're using Three.js from both @react-three/fiber and @google/model-viewer
 // This causes a warning about multiple instances, but it's necessary for our use case
 // as we need both libraries for different features (3D editing and AR viewing)
@@ -15,6 +15,7 @@ import { Environment } from '@react-three/drei';
 import { MeshReflectorMaterial } from '@react-three/drei';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 const balloonTypeOptions = [
     { name: 'Latex', value: 'A' },
@@ -105,6 +106,28 @@ const Configurator = () => {
     const carouselRef = useRef(null);
     const [touchStart, setTouchStart] = useState(null);
     const [touchEnd, setTouchEnd] = useState(null);
+
+    // --- Add State and Effect for AR Loading Indicator --- 
+    const [isViewerLoading, setIsViewerLoading] = useState(false); // Initially false
+
+    useEffect(() => {
+        let timer = null;
+        if (showAR && modelBlobUrl) {
+             // Reset loading state when AR starts
+            setIsViewerLoading(true);
+            // Force hide loading indicator after a delay (e.g., 2 seconds)
+            timer = setTimeout(() => {
+                console.log('Configurator (AR Inline): Forcing loading indicator off after timeout.');
+                setIsViewerLoading(false);
+            }, 2000); // 2000 milliseconds = 2 seconds
+        }
+        // Cleanup the timer if the component unmounts or AR closes before timeout
+        return () => { 
+            if (timer) clearTimeout(timer); 
+            setIsViewerLoading(false); // Ensure loading is false on cleanup
+        }
+    }, [showAR, modelBlobUrl]); 
+    // --- End AR Loading Indicator Logic ---
 
     // Add useEffect for welcome message
     useEffect(() => {
@@ -201,90 +224,240 @@ const Configurator = () => {
         }
     }, [showAR, modelBlobUrl]);
 
-    const handleArView = async () => {
-        // Restore check for bouquetGroupRef.current
-        if (!bouquetGroupRef.current) { 
-            console.error('AR: Bouquet group ref not ready');
-            setArError('AR Error: Model reference not ready.');
-            setIsLoading(false);
-            return;
+    // Preload the model for AR export (optional but good practice)
+    useGLTF.preload('/models/balloon_bouquet_v4_condensed.glb');
+
+    // Memoize materials specifically for export generation
+    const exportMaterialsCache = useRef({}); // Use a ref to persist cache across renders
+
+    useEffect(() => {
+        // This effect creates/updates materials needed for export based on current state
+        // It tries to cache them in exportMaterialsCache.current
+        const updatedCache = { ...exportMaterialsCache.current }; // Start with existing cache
+        let changed = false;
+
+        // Balloon Materials
+        Object.keys(balloonColors).forEach(balloonId => {
+            const color = balloonColors[balloonId];
+            const materialType = balloonMaterials[balloonId];
+            const key = `${balloonId}-${color}-${materialType}`;
+
+            if (!updatedCache[key]) { // Only create if not in cache
+                console.log(`AR Export Prep: Creating material for key: ${key}`);
+                let newMaterial;
+                if (materialType === 'metallic') {
+                    newMaterial = new THREE.MeshStandardMaterial({
+                        color: color,
+                        metalness: 1.0,
+                        roughness: 0.1,
+                        name: key
+                    });
+                } else if (materialType === 'matte') {
+                    newMaterial = new THREE.MeshStandardMaterial({
+                        color: color,
+                        metalness: 0.1,
+                        roughness: 0.9,
+                        name: key
+                    });
+                } else { // Default to standard/glossy
+                    newMaterial = new THREE.MeshStandardMaterial({
+                        color: color,
+                        metalness: 0.3,
+                        roughness: 0.3,
+                        name: key
+                    });
+                }
+                updatedCache[key] = newMaterial;
+                changed = true;
+            }
+        });
+
+        // String Material (ensure single-sided)
+        const stringKey = 'whiteStringMat-singleSided';
+        if (!updatedCache[stringKey]) {
+            console.log(`AR Export Prep: Creating single-sided string material: ${stringKey}`);
+            updatedCache[stringKey] = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.8,
+                metalness: 0.1,
+                name: stringKey,
+                side: THREE.FrontSide // Ensure single-sided
+            });
+            changed = true;
         }
+
+        if (changed) {
+            exportMaterialsCache.current = updatedCache;
+             console.log('AR Export Prep: Updated material cache:', exportMaterialsCache.current);
+        }
+
+    }, [balloonColors, balloonMaterials]); // Re-run only when colors or material types change
+
+    const handleArView = async () => {
+        // No longer relies on bouquetGroupRef.current for export
 
         try {
             setArError(null);
             setIsLoading(true);
-            console.log('AR: Starting bouquet model export...');
+            console.log('AR: Starting independent model preparation for export...');
 
+            // 1. Load the base GLB model data specifically for export
+            const gltfData = await new Promise((resolve, reject) => {
+                 const loader = new GLTFLoader(); 
+                 loader.load(
+                     '/models/balloon_bouquet_v4_condensed.glb',
+                     (loadedGltf) => {
+                          console.log('AR Export: Base GLB loaded successfully.');
+                          resolve(loadedGltf);
+                     },
+                     undefined, // Progress callback (optional)
+                     (error) => {
+                         console.error('AR Export: Error loading base GLB:', error);
+                         reject(new Error("Failed to load base model for AR."));
+                     }
+                 );
+            });
+            
+            const sceneToExport = gltfData.scene.clone(true); // Clone the scene graph
+            console.log('AR Export: Cloned base scene graph.'); // Add root object log maybe?
+
+            // 2. Apply customizations (visibility, materials) to the cloned scene
+            sceneToExport.traverse((node) => {
+                if (node.isMesh) {
+                    // console.log(`AR Export Prep: Processing node: ${node.name}`); // Verbose log
+                    const parts = node.name.split('_'); // e.g., balloon_top_A, string_top
+
+                    if (parts.length >= 2 && parts[0] === 'balloon') {
+                        const balloonId = parts[1]; // e.g., 'top', 'middle1'
+                        const balloonShape = parts.length > 2 ? parts[2] : 'A'; // Default 'A'
+
+                        // Visibility based on selected type for this position
+                        const targetType = balloonTypes[balloonId] || 'A'; // Fallback if ID not found
+                        node.visible = (balloonShape === targetType);
+                        // console.log(`AR Export Prep: [${node.name}] ID: ${balloonId}, Shape: ${balloonShape}, Target: ${targetType}, Visible: ${node.visible}`); // Verbose log
+
+                        // Apply Material only if visible
+                        if (node.visible) {
+                            const color = balloonColors[balloonId];
+                            const materialType = balloonMaterials[balloonId];
+                            const materialKey = `${balloonId}-${color}-${materialType}`;
+                            
+                            if (exportMaterialsCache.current[materialKey]) {
+                                node.material = exportMaterialsCache.current[materialKey];
+                                // console.log(`AR Export Prep: Applied material ${materialKey} to ${node.name}`); // Verbose log
+                            } else {
+                                console.warn(`AR Export Prep: Material key ${materialKey} not found in cache for ${node.name}. Using original material.`);
+                                // Fallback: Use the material already on the node (from the loaded GLB)
+                                // Ensure it's cloned if necessary? GLTFExporter might handle this.
+                                // For safety, let's leave the original material from the clone.
+                            }
+                        }
+                    } else if (node.name.startsWith('string_')) {
+                         const balloonId = parts[1]; // e.g., 'top'
+                         const targetType = balloonTypes[balloonId] || 'A'; // Fallback
+                         
+                         // String visibility should match the visibility of the corresponding 'A' (Latex) balloon type
+                         // Check if the *currently selected* type for this position is 'A'
+                         node.visible = (targetType === 'A');
+                         // console.log(`AR Export Prep: [${node.name}] ID: ${balloonId}, Target Type: ${targetType}, Visible: ${node.visible}`); // Verbose log
+
+                         if (node.visible) {
+                            // Apply the cached single-sided string material
+                            const stringKey = 'whiteStringMat-singleSided';
+                            if (exportMaterialsCache.current[stringKey]) {
+                                node.material = exportMaterialsCache.current[stringKey];
+                                // console.log(`AR Export Prep: Applied single-sided string material to ${node.name}`); // Verbose log
+                            } else {
+                                 console.warn(`AR Export Prep: Cached string material not found for ${node.name}. Forcing original material to single-sided.`);
+                                 // Fallback: Force the original material to be single-sided
+                                 if (node.material && node.material.isMaterial) {
+                                     node.material.side = THREE.FrontSide;
+                                 } else {
+                                     console.error(`AR Export Prep: Cannot set side property on non-material for ${node.name}`);
+                                 }
+                            }
+                         }
+                    }
+                    
+                    // General cleanup for invisible nodes (optional, but might help)
+                    // if (!node.visible) {
+                    //     node.material = null; // Remove material reference?
+                    //     // geometry cleanup? maybe too much
+                    // }
+                }
+            });
+
+            console.log('AR Export Prep: Customizations applied to cloned scene.');
+
+            // 3. Export the prepared scene
             const exporter = new GLTFExporter();
-            const objectToExport = bouquetGroupRef.current; // Use the bouquet group
-            
-            console.log('AR DEBUG: Object to export (bouquetGroupRef.current):', objectToExport);
-            
-            console.log('AR DEBUG: Skipping material simplification. Starting exporter.parse...');
+            console.log('AR DEBUG: Starting exporter.parse with prepared scene...');
 
             let gltf;
             gltf = await new Promise((resolve, reject) => {
                 exporter.parse(
-                    objectToExport, // Export the bouquet group
-                    (gltfData) => {
-                        console.log('AR DEBUG: GLTFExporter.parse successful for bouquet.', gltfData); 
-                        resolve(gltfData); 
-                    }, 
-                    (error) => { 
-                        console.error('AR: GLTFExporter parse error for bouquet', error); 
-                        reject(error); 
-                    }, 
-                    { // Restore options from before material simplification test
-                        binary: true, 
-                        trs: false,
-                        onlyVisible: true,
-                        embedImages: true, // Keep true if textures needed
-                        maxTextureSize: 1024
+                    sceneToExport, // Use the prepared scene object
+                    (gltfDataResult) => {
+                        console.log('AR DEBUG: GLTFExporter.parse successful for prepared scene.', gltfDataResult);
+                        resolve(gltfDataResult);
+                    },
+                    (error) => {
+                        console.error('AR: GLTFExporter parse error for prepared scene', error);
+                        reject(error); // Use the actual error object
+                    },
+                    {
+                        binary: true,
+                        trs: false, // Transforms should be baked in the original model
+                        embedImages: true, // Necessary if model has textures (unlikely here)
+                        maxTextureSize: 1024, // Keep reasonable limit
+                        // onlyVisible: false // We manually set visibility, export the structure
                     }
                 );
             });
-            
-            if (!(gltf instanceof ArrayBuffer)) {
-                console.error('AR Error: Export did not produce ArrayBuffer');
-                throw new Error("GLTFExporter failed to produce valid data.");
-            }
 
-            console.log(`AR DEBUG: Exported Bouquet GLB size (ArrayBuffer): ${gltf.byteLength} bytes`);
+            // --- Check result and proceed with upload ---
+            if (!(gltf instanceof ArrayBuffer)) {
+                 console.error('AR Error: Export did not produce ArrayBuffer');
+                 throw new Error("GLTFExporter failed to produce valid data.");
+             }
+
+            console.log(`AR DEBUG: Exported Prepared Scene GLB size (ArrayBuffer): ${gltf.byteLength} bytes`);
             const blob = new Blob([gltf], { type: 'model/gltf-binary' });
-            console.log(`AR DEBUG: Bouquet Blob size before upload: ${blob.size} bytes`);
+            console.log(`AR DEBUG: Prepared Scene Blob size before upload: ${blob.size} bytes`);
 
             // --- Upload to Firebase Storage ---
-            const timestamp = Date.now();
-            const filename = `ar-model-${timestamp}.glb`; 
-            const storageRef = ref(storage, `ar-models/${filename}`);
+             const timestamp = Date.now();
+             const filename = `ar-model-${timestamp}.glb`; 
+             const storageRef = ref(storage, `ar-models/${filename}`);
 
-            console.log('AR: Uploading Bouquet GLB to Firebase Storage...');
+            console.log('AR: Uploading Prepared Scene GLB to Firebase Storage...');
             await uploadBytes(storageRef, blob);
-            console.log('AR: Bouquet Upload complete');
+            console.log('AR: Prepared Scene Upload complete');
 
             const downloadURL = await getDownloadURL(storageRef);
-            console.log('AR: Bouquet Model URL created:', downloadURL);
+            console.log('AR: Prepared Scene Model URL created:', downloadURL);
 
-            setModelBlobUrl(downloadURL);
-            setShowAR(true);
+            setModelBlobUrl(downloadURL); // Set the URL for model-viewer
+            setShowAR(true);              // Show the AR overlay
             console.log('AR: Setting showAR to true.');
 
         } catch (error) {
-            console.error('AR: Export failed', error);
-            const errorMessage = error?.message || 'An unknown error occurred during AR export.';
-            setArError(`AR Export Error: ${errorMessage}`);
+            console.error('AR: Export or Preparation failed', error);
+            // Use optional chaining and provide a default message
+            const errorMessage = error?.message || 'An unknown error occurred during AR preparation/export.';
+            setArError(`AR Error: ${errorMessage}`);
         } finally {
-            setIsLoading(false);
-            console.log('AR: Export process finished (or failed).');
+            setIsLoading(false); // Ensure loading indicator stops
+            console.log('AR: Preparation & Export process finished (or failed).');
         }
     };
 
     const handleExitAR = () => {
+        console.log('AR: Exiting AR view.');
         setShowAR(false);
-        if (modelBlobUrl) {
-            URL.revokeObjectURL(modelBlobUrl);
-            setModelBlobUrl(null);
-        }
+        setModelBlobUrl(null); // Clear the URL
+        setArError(null);     // Clear any errors
+        setIsViewerLoading(false); // Ensure loading indicator is off
     };
 
     const handleARButtonClick = () => {
@@ -304,7 +477,8 @@ const Configurator = () => {
             left: '50%',
             transform: 'translate(-50%, -50%)',
             textAlign: 'center',
-            zIndex: 1000
+            zIndex: 1000,
+            color: 'white' // Ensure text is visible
         }}>
             <div style={{
                 border: '4px solid #f3f3f3',
@@ -315,7 +489,7 @@ const Configurator = () => {
                 animation: 'spin 1s linear infinite',
                 margin: '0 auto 10px'
             }} />
-            <p>Preparing AR View...</p>
+            <p>Loading 3D Model...</p>
         </div>
     );
 
@@ -1381,63 +1555,136 @@ const Configurator = () => {
                 </>
             )}
 
-            {/* --- RENDER AR VIEW DIRECTLY --- */}
-            {/* Render the component directly when showAR and modelBlobUrl are ready */}
+            {/* --- INLINE AR VIEW JSX --- */}
             {showAR && modelBlobUrl && (
-                <ARView // Use direct import
-                    modelBlobUrl={modelBlobUrl}
-                    handleExitAR={handleExitAR} 
-                    arError={arError}           
-                    setArError={setArError}     
-                    isLoading={isLoading}       
-                />
-            )}
-            {/* --- END RENDER AR VIEW DIRECTLY --- */}
-
-            <style>
-                {`
-                    @keyframes spin {
-                        0% { transform: rotate(0deg); }
-                        100% { transform: rotate(360deg); }
-                    }
-                    model-viewer {
-                        width: 100%;
-                        height: 100%;
-                        background-color: transparent;
-                        --poster-color: transparent;
-                        position: fixed;
-                        top: 0;
-                        left: 0;
-                        right: 0;
-                        bottom: 0;
-                        /* Default AR button styles (can be overridden below) */
-                        --ar-button-background: #FF69B4;
-                        --ar-button-border-radius: 50%;
-                        --ar-button-color: white;
-                        --ar-button-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                    }
+                 <div className="ar-container" style={{ 
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100vh',
+                    zIndex: 1000,
+                    background: 'rgba(0, 0, 0, 0.7)', // Darker background for focus
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                }}>
+                    {/* Use Configurator's isViewerLoading state */}
+                    {isViewerLoading && <LoadingIndicator />}
                     
-                    /* Add styles to center the icon INSIDE the default AR button */
-                    model-viewer::part(default-ar-button) {
-                        display: flex !important; /* Use flexbox */
-                        align-items: center !important; /* Vertical center */
-                        justify-content: center !important; /* Horizontal center */
-                        padding: 0 !important; /* Remove default padding if any */
+                    {/* Exit Button */}
+                    <button 
+                        className="exit-ar-button" 
+                        onClick={handleExitAR}
+                        style={{
+                            position: 'fixed',
+                            top: '20px',
+                            right: '20px',
+                            zIndex: 1001,
+                            padding: '10px 20px',
+                            backgroundColor: 'rgba(255, 105, 180, 0.8)', // Slightly transparent
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '5px',
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                        }}
+                    >
+                        Exit AR
+                    </button>
 
-                        /* --- Force position to top-left --- */
-                        position: absolute !important;
-                        top: 20px !important;      /* Position from the top */
-                        left: 20px !important;     /* Position from the left */
-                        transform: unset !important; /* Remove previous centering transform */
-                        right: unset !important;  /* Remove default positioning */
-                        bottom: unset !important; /* Remove default positioning */
-                    }
+                    {/* Error Display */}
+                    {arError && (
+                        <div className="ar-error" style={{
+                            position: 'fixed',
+                            bottom: '80px',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            backgroundColor: 'rgba(255, 0, 0, 0.8)',
+                            color: 'white',
+                            padding: '10px 15px',
+                            borderRadius: '5px',
+                            zIndex: 1002,
+                            textAlign: 'center'
+                        }}>
+                            {arError}
+                        </div>
+                    )}
 
-                    model-viewer:hover {
-                        --ar-button-background: #FF1493; 
-                    }
-                `}
-            </style>
+                    {/* Style Tag for model-viewer */} 
+                    <style>
+                        {`
+                            @keyframes spin {
+                                0% { transform: rotate(0deg); }
+                                100% { transform: rotate(360deg); }
+                            }
+                            model-viewer#balloon-ar-viewer { 
+                                width: 100%;
+                                height: 100%;
+                                background-color: transparent;
+                                --poster-color: transparent;
+                                position: absolute; 
+                                top: 0;
+                                left: 0;
+                                right: 0;
+                                bottom: 0;
+                                --ar-button-background: #FF69B4;
+                                --ar-button-border-radius: 50%;
+                                --ar-button-color: white;
+                                --ar-button-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                            }
+                            model-viewer#balloon-ar-viewer::part(default-ar-button) {
+                                display: flex !important;
+                                align-items: center !important;
+                                justify-content: center !important;
+                                padding: 0 !important;
+                                position: absolute !important; 
+                                top: 20px !important;
+                                left: 20px !important;
+                            }
+                        `}
+                    </style>
+
+                    {/* Model Viewer (absolute position within the relative container) */} 
+                    <div style={{ position: 'absolute', width: '100%', height: '100%', top: 0, left: 0 }}>
+                         {modelBlobUrl && (
+                            <model-viewer
+                                id="balloon-ar-viewer" 
+                                src={modelBlobUrl}
+                                alt="AR Balloon Bouquet"
+                                ar
+                                ar-modes="webxr quick-look scene-viewer" 
+                                camera-controls
+                                shadow-intensity="1"
+                                auto-rotate
+                                camera-orbit="45deg 55deg 2.5m"
+                                min-camera-orbit="auto auto 0.1m"
+                                max-camera-orbit="auto auto 10m"
+                                loading="eager"
+                                crossOrigin="anonymous"
+                                style={{ 
+                                    width: '100%', 
+                                    height: '100%',
+                                    backgroundColor: 'transparent'
+                                }}
+                                onError={(event) => {
+                                    console.error('Configurator (AR Inline): Model viewer error:', event.detail);
+                                    setArError('Failed to load 3D model.');
+                                    setIsViewerLoading(false); 
+                                }}
+                                onLoad={() => {
+                                    console.log('Configurator (AR Inline): Model loaded successfully (onLoad event)');
+                                    setIsViewerLoading(false); 
+                                }}
+                            >
+                            </model-viewer>
+                         )} 
+                    </div>
+                </div>
+            )}
+            {/* --- END INLINE AR VIEW JSX --- */}
         </>
     );
 };
