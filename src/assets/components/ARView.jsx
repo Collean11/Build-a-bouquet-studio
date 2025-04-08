@@ -28,6 +28,19 @@ const ARView = ({ modelBlobUrl, handleExitAR, arError, setArError, isLoading: in
     // We use local loading state because the model-viewer load determines UI readiness here
     const [isViewerLoading, setIsViewerLoading] = useState(true);
 
+    // --- Workaround for onLoad not firing --- 
+    useEffect(() => {
+        // Force hide loading indicator after a delay (e.g., 2 seconds)
+        const timer = setTimeout(() => {
+            console.log('ARView: Forcing loading indicator off after timeout.');
+            setIsViewerLoading(false);
+        }, 2000); // 2000 milliseconds = 2 seconds
+
+        // Cleanup the timer if the component unmounts or model changes before timeout
+        return () => clearTimeout(timer);
+    }, [modelBlobUrl]); // Re-run if the model URL changes
+    // --- End Workaround --- 
+
     // Handler for the custom Launch AR button within this component
     const handleLaunchAR = () => {
         const modelViewerElement = document.querySelector('model-viewer');
@@ -193,8 +206,9 @@ const ARView = ({ modelBlobUrl, handleExitAR, arError, setArError, isLoading: in
                             setIsViewerLoading(false); // Ensure loading stops on error
                         }}
                         onLoad={() => {
-                            console.log('ARView: Model loaded successfully');
-                            setIsViewerLoading(false); // Stop loading indicator
+                            console.log('ARView: Model loaded successfully (onLoad event)');
+                            // Still try to set state normally via onLoad
+                            setIsViewerLoading(false); 
                         }}
                     >
                         {/* Optional: Add a slot for custom poster if needed */}
