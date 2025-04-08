@@ -1419,6 +1419,51 @@ const Configurator = () => {
                 />
             )}
             {/* --- END RENDER LAZY AR VIEW --- */} 
+
+            <style>
+                {`
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                    model-viewer {
+                        width: 100%;
+                        height: 100%;
+                        background-color: transparent;
+                        --poster-color: transparent;
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        /* Default AR button styles (can be overridden below) */
+                        --ar-button-background: #FF69B4;
+                        --ar-button-border-radius: 50%;
+                        --ar-button-color: white;
+                        --ar-button-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                    }
+                    
+                    /* Add styles to center the icon INSIDE the default AR button */
+                    model-viewer::part(default-ar-button) {
+                        display: flex !important; /* Use flexbox */
+                        align-items: center !important; /* Vertical center */
+                        justify-content: center !important; /* Horizontal center */
+                        padding: 0 !important; /* Remove default padding if any */
+
+                        /* --- Force position to top-left --- */
+                        position: absolute !important;
+                        top: 20px !important;      /* Position from the top */
+                        left: 20px !important;     /* Position from the left */
+                        transform: unset !important; /* Remove previous centering transform */
+                        right: unset !important;  /* Remove default positioning */
+                        bottom: unset !important; /* Remove default positioning */
+                    }
+
+                    model-viewer:hover {
+                        --ar-button-background: #FF1493; 
+                    }
+                `}
+            </style>
         </>
     );
 };
