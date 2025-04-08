@@ -16,6 +16,7 @@ import { MeshReflectorMaterial } from '@react-three/drei';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 
 const balloonTypeOptions = [
     { name: 'Latex', value: 'A' },
@@ -24,56 +25,14 @@ const balloonTypeOptions = [
 ];
 
 const backgroundOptions = [
-    { 
-        name: 'Black', 
-        value: '#000000', 
-        primaryColor: '#333333' 
-    },
-    { 
-        name: 'White', 
-        value: '#FFFFFF', 
-        primaryColor: '#EEEEEE' 
-    },
-    { 
-        name: 'Sunset', 
-        value: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E53 50%, #FFD93D 100%)', 
-        primaryColor: '#FF6B6B' 
-    },
-    { 
-        name: 'Ocean', 
-        value: 'linear-gradient(135deg, #4ECDC4 0%, #45B7AF 50%, #2C3E50 100%)', 
-        primaryColor: '#4ECDC4' 
-    },
-    { 
-        name: 'Lavender', 
-        value: 'linear-gradient(135deg, #A8A4E6 0%, #D4B0F7 50%, #E6E6FA 100%)', 
-        primaryColor: '#A8A4E6' 
-    },
-    { 
-        name: 'Mint', 
-        value: 'linear-gradient(135deg, #98D8AA 0%, #B5EAD7 50%, #C7CEEA 100%)', 
-        primaryColor: '#98D8AA' 
-    },
-    { 
-        name: 'Blush', 
-        value: 'linear-gradient(135deg, #FFB5B5 0%, #FFD1D1 50%, #FFE4E1 100%)', 
-        primaryColor: '#FFB5B5' 
-    },
-    { 
-        name: 'Sky', 
-        value: 'linear-gradient(135deg, #89CFF0 0%, #B0E0E6 50%, #E0FFFF 100%)', 
-        primaryColor: '#89CFF0' 
-    },
-    { 
-        name: 'Rose', 
-        value: 'linear-gradient(135deg, #E91E63 0%, #FF80AB 50%, #FFC0CB 100%)',
-        primaryColor: '#E91E63'
-    },
-    { 
-        name: 'Forest', 
-        value: 'linear-gradient(135deg, #98FB98 0%, #90EE90 50%, #E8F5E9 100%)', 
-        primaryColor: '#98FB98' 
-    }
+    { id: 'bg-black', label: 'Black', value: '#000000', primaryColor: '#333333' },
+    { id: 'bg-white', label: 'White', value: '#ffffff', primaryColor: '#EEEEEE' },
+    { id: 'bg-sky', label: 'Sky', value: 'linear-gradient(135deg, #a1c4fd, #c2e9fb)', primaryColor: '#a1c4fd' },
+    { id: 'bg-rose', label: 'Rose', value: 'linear-gradient(135deg, #E91E63, #FF80AB, #FFC0CB)', primaryColor: '#E91E63' },
+    { id: 'bg-pastel-dream', label: 'Pastel Dream', value: 'linear-gradient(135deg, #FFB6C1, #CDB7F0)', primaryColor: '#B19CD9' },
+    { id: 'bg-gradient-1', label: 'Sunrise', value: 'linear-gradient(135deg, #f8b500, #ff4e50)', primaryColor: '#f8b500' },
+    { id: 'bg-gradient-2', label: 'Ocean', value: 'linear-gradient(135deg, #2980b9, #6dd5fa)', primaryColor: '#2980b9' },
+    { id: 'bg-gradient-3', label: 'Forest', value: 'linear-gradient(135deg, #134e5e, #71b280)', primaryColor: '#134e5e' },
 ];
 
 const Configurator = () => {
@@ -230,6 +189,13 @@ const Configurator = () => {
     // Memoize materials specifically for export generation
     const exportMaterialsCache = useRef({}); // Use a ref to persist cache across renders
 
+    // Memoize the DRACOLoader instance
+    const dracoLoader = useMemo(() => {
+        const loader = new DRACOLoader();
+        loader.setDecoderPath('/draco/'); // Path to the Draco decoder files in public/
+        return loader;
+    }, []);
+
     useEffect(() => {
         // This effect creates/updates materials needed for export based on current state
         // It tries to cache them in exportMaterialsCache.current
@@ -303,9 +269,11 @@ const Configurator = () => {
 
             // 1. Load the base GLB model data specifically for export
             const gltfData = await new Promise((resolve, reject) => {
-                 const loader = new GLTFLoader(); 
+                 const loader = new GLTFLoader();
+                 loader.setDRACOLoader(dracoLoader); // Set the DRACOLoader instance
                  loader.load(
-                     '/models/balloon_bouquet_v4_condensed.glb',
+                     // Corrected path (verified against public/models/ listing)
+                     '/models/balloonBouquetV4-transformed-v2.glb', 
                      (loadedGltf) => {
                           console.log('AR Export: Base GLB loaded successfully.');
                           resolve(loadedGltf);
@@ -319,71 +287,125 @@ const Configurator = () => {
             });
             
             const sceneToExport = gltfData.scene.clone(true); // Clone the scene graph
-            console.log('AR Export: Cloned base scene graph.'); // Add root object log maybe?
+            console.log('AR Export: Cloned base scene graph.');
+            console.log('AR Export Prep: Current Material Cache:', exportMaterialsCache.current);
+            console.log('AR Export Prep: Current Balloon Types:', balloonTypes);
+            console.log('AR Export Prep: Current Balloon Colors:', balloonColors);
+            console.log('AR Export Prep: Current Balloon Materials:', balloonMaterials);
 
             // 2. Apply customizations (visibility, materials) to the cloned scene
             sceneToExport.traverse((node) => {
                 if (node.isMesh) {
-                    // console.log(`AR Export Prep: Processing node: ${node.name}`); // Verbose log
-                    const parts = node.name.split('_'); // e.g., balloon_top_A, string_top
+                    console.log(`AR Export Prep: Processing Mesh: ${node.name}`);
 
-                    if (parts.length >= 2 && parts[0] === 'balloon') {
-                        const balloonId = parts[1]; // e.g., 'top', 'middle1'
-                        const balloonShape = parts.length > 2 ? parts[2] : 'A'; // Default 'A'
+                    // Skip the weight
+                    if (node.name === 'Balloon_weight') {
+                        console.log(`  - Skipping Balloon_weight node.`);
+                        return; 
+                    }
+
+                    // Updated pattern matching for names like TopA, Middle1B, Bottom3C
+                    // Regex to capture Position (e.g., Top, Middle1, Bottom3) and optional Shape (A, B, C)
+                    const match = node.name.match(/^(Top|Middle1|Middle2|Middle3|Bottom1|Bottom2|Bottom3)([ABC])?$/);
+
+                    if (match) {
+                        const positionCamelCase = match[1]; // e.g., Top, Middle1
+                        const balloonShape = match[2] || 'A'; // Shape (A, B, C) or default to A if not present
+                        
+                        // Convert CamelCase position to lowercase key used in state
+                        const positionMap = {
+                            'Top': 'top',
+                            'Middle1': 'middle1',
+                            'Middle2': 'middle2',
+                            'Middle3': 'middle3',
+                            'Bottom1': 'bottom1',
+                            'Bottom2': 'bottom2',
+                            'Bottom3': 'bottom3'
+                        };
+                        const balloonId = positionMap[positionCamelCase]; 
+
+                        if (!balloonId) {
+                            console.warn(`  - Pattern Warning: Could not map position ${positionCamelCase} to a state key for node ${node.name}.`);
+                            return; // Skip if we can't map the position
+                        }
+
+                        console.log(`  - Balloon Node (New Pattern): ID=${balloonId}, Shape=${balloonShape}`);
 
                         // Visibility based on selected type for this position
-                        const targetType = balloonTypes[balloonId] || 'A'; // Fallback if ID not found
-                        node.visible = (balloonShape === targetType);
-                        // console.log(`AR Export Prep: [${node.name}] ID: ${balloonId}, Shape: ${balloonShape}, Target: ${targetType}, Visible: ${node.visible}`); // Verbose log
-
+                        const targetType = balloonTypes[balloonId];
+                        if (!targetType) {
+                            console.warn(`  - Visibility Warning: No type found in balloonTypes for ID: ${balloonId}. Defaulting to A.`);
+                            node.visible = (balloonShape === 'A');
+                        } else {
+                            node.visible = (balloonShape === targetType);
+                            console.log(`  - Visibility Check: Target=${targetType}, Node visible=${node.visible}`);
+                        }
+                        
                         // Apply Material only if visible
                         if (node.visible) {
                             const color = balloonColors[balloonId];
                             const materialType = balloonMaterials[balloonId];
                             const materialKey = `${balloonId}-${color}-${materialType}`;
+                            console.log(`  - Material Check: Attempting key=${materialKey}`);
                             
                             if (exportMaterialsCache.current[materialKey]) {
                                 node.material = exportMaterialsCache.current[materialKey];
-                                // console.log(`AR Export Prep: Applied material ${materialKey} to ${node.name}`); // Verbose log
+                                console.log(`  - Material Applied: ${materialKey}`); 
                             } else {
-                                console.warn(`AR Export Prep: Material key ${materialKey} not found in cache for ${node.name}. Using original material.`);
-                                // Fallback: Use the material already on the node (from the loaded GLB)
-                                // Ensure it's cloned if necessary? GLTFExporter might handle this.
-                                // For safety, let's leave the original material from the clone.
+                                console.warn(`  - Material Warning: Key ${materialKey} not found in cache for ${node.name}. Using original material.`);
                             }
+                        } else {
+                            console.log(`  - Material Check: Node is not visible, skipping material assignment.`);
                         }
-                    } else if (node.name.startsWith('string_')) {
-                         const balloonId = parts[1]; // e.g., 'top'
-                         const targetType = balloonTypes[balloonId] || 'A'; // Fallback
-                         
-                         // String visibility should match the visibility of the corresponding 'A' (Latex) balloon type
-                         // Check if the *currently selected* type for this position is 'A'
-                         node.visible = (targetType === 'A');
-                         // console.log(`AR Export Prep: [${node.name}] ID: ${balloonId}, Target Type: ${targetType}, Visible: ${node.visible}`); // Verbose log
+                    // Example check for Strings (assuming name like StringTop, StringMiddle1)
+                    } else if (node.name.startsWith('String')) { 
+                        const stringPosMatch = node.name.match(/^String(Top|Middle1|Middle2|Middle3|Bottom1|Bottom2|Bottom3)$/);
+                        if (stringPosMatch) {
+                            const positionCamelCase = stringPosMatch[1];
+                            const positionMap = {
+                                'Top': 'top',
+                                'Middle1': 'middle1',
+                                'Middle2': 'middle2',
+                                'Middle3': 'middle3',
+                                'Bottom1': 'bottom1',
+                                'Bottom2': 'bottom2',
+                                'Bottom3': 'bottom3'
+                            };
+                            const balloonId = positionMap[positionCamelCase];
 
-                         if (node.visible) {
-                            // Apply the cached single-sided string material
-                            const stringKey = 'whiteStringMat-singleSided';
-                            if (exportMaterialsCache.current[stringKey]) {
-                                node.material = exportMaterialsCache.current[stringKey];
-                                // console.log(`AR Export Prep: Applied single-sided string material to ${node.name}`); // Verbose log
-                            } else {
-                                 console.warn(`AR Export Prep: Cached string material not found for ${node.name}. Forcing original material to single-sided.`);
-                                 // Fallback: Force the original material to be single-sided
-                                 if (node.material && node.material.isMaterial) {
-                                     node.material.side = THREE.FrontSide;
-                                 } else {
-                                     console.error(`AR Export Prep: Cannot set side property on non-material for ${node.name}`);
-                                 }
+                            if (!balloonId) {
+                                console.warn(`  - Pattern Warning: Could not map position ${positionCamelCase} for string node ${node.name}.`);
+                                return; 
                             }
-                         }
+
+                            console.log(`  - String Node (New Pattern): ID=${balloonId}`);
+                            const targetType = balloonTypes[balloonId];
+                            if (!targetType) {
+                                console.warn(`  - Visibility Warning: No type found for ID: ${balloonId}. Defaulting string visibility.`);
+                                node.visible = false;
+                            } else {
+                                node.visible = (targetType === 'A'); // Strings only visible for type A
+                                console.log(`  - Visibility Check: TargetType=${targetType}, String visible=${node.visible}`);
+                            }
+
+                            if (node.visible) {
+                                const stringKey = 'whiteStringMat-singleSided';
+                                console.log(`  - Material Check: Attempting key=${stringKey}`);
+                                if (exportMaterialsCache.current[stringKey]) {
+                                    node.material = exportMaterialsCache.current[stringKey];
+                                    console.log(`  - Material Applied: ${stringKey}`);
+                                } else {
+                                    console.warn(`  - Material Warning: Cached string material ${stringKey} not found for ${node.name}. Using original.`);
+                                }
+                            } else {
+                                console.log(`  - Material Check: Node is not visible, skipping material assignment.`);
+                            }
+                        } else {
+                             console.log(`  - String node ${node.name} does not match expected String[Position] pattern.`);
+                        }
+                    } else {
+                        console.log(`  - Node ${node.name} does not match expected Balloon ([Position][Shape]) or String (String[Position]) pattern.`);
                     }
-                    
-                    // General cleanup for invisible nodes (optional, but might help)
-                    // if (!node.visible) {
-                    //     node.material = null; // Remove material reference?
-                    //     // geometry cleanup? maybe too much
-                    // }
                 }
             });
 
@@ -550,7 +572,7 @@ const Configurator = () => {
             title: 'Balloon Type',
             icon: '🎯',
             content: ({ balloonTypes, toggleBalloonType, selectedBalloon, balloonTypeOptions }) => {
-                const typeContent = (
+                return (
                     <div style={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(2, 1fr)',
@@ -579,17 +601,6 @@ const Configurator = () => {
                         ))}
                     </div>
                 );
-
-                return (
-                    // Wrap the type content in the scrollable div
-                    <div style={{
-                        overflowY: 'auto',
-                        maxHeight: isMobileView ? '100px' : '150px',
-                        paddingRight: '5px'
-                    }}>
-                        {typeContent}
-                    </div>
-                );
             }
         },
         {
@@ -597,7 +608,7 @@ const Configurator = () => {
             title: 'Colors',
             icon: '🎨',
             content: ({ balloonColors, setColor, selectedBalloon, colorOptions }) => {
-                const colorContent = (
+                return (
                     <div style={{
                         display: 'flex',
                         flexDirection: 'column',
@@ -655,16 +666,6 @@ const Configurator = () => {
                         ))}
                     </div>
                 );
-                
-                return (
-                    <div style={{
-                        overflowY: 'auto',
-                        maxHeight: isMobileView ? '100px' : '150px',
-                        paddingRight: '5px'
-                    }}>
-                        {colorContent}
-                    </div>
-                );
             }
         },
         {
@@ -710,56 +711,37 @@ const Configurator = () => {
                     <div style={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(2, 1fr)',
-                        gap: '6px',
+                        gap: '8px',
                         width: '100%'
                     }}>
                         {backgroundOptions.map((bg) => (
                             <button
-                                key={bg.name}
+                                key={bg.id}
                                 onClick={() => setSelectedBackground(bg.value)}
+                                title={bg.label}
                                 style={{
-                                    aspectRatio: '1',
-                                    borderRadius: '8px',
                                     background: bg.value,
-                                    border: selectedBackground === bg.value ? '2px solid #E91E63' : '2px solid rgba(255, 255, 255, 0.8)',
-                                    boxShadow: selectedBackground === bg.value ? '0 4px 12px rgba(233, 30, 99, 0.3)' : '0 2px 4px rgba(0,0,0,0.1)',
-                                    transform: selectedBackground === bg.value ? 'scale(1.05)' : 'scale(1)',
-                                    transition: 'all 0.3s ease',
-                                    position: 'relative',
+                                    border: selectedBackground === bg.value ? '2px solid #333' : '2px solid transparent',
+                                    borderRadius: '8px',
+                                    height: '60px',
                                     cursor: 'pointer',
-                                    padding: 0,
-                                    width: '100%'
+                                    overflow: 'hidden',
+                                    transition: 'border 0.2s ease',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                                 }}
                             >
-                                <span style={{
-                                    position: 'absolute',
-                                    bottom: 0,
-                                    left: 0,
-                                    right: 0,
-                                    padding: '4px',
-                                    background: 'rgba(0, 0, 0, 0.6)',
-                                    color: 'white',
-                                    fontSize: '10px',
-                                    textAlign: 'center',
-                                    backdropFilter: 'blur(4px)',
-                                    WebkitBackdropFilter: 'blur(4px)',
-                                    borderBottomLeftRadius: '6px',
-                                    borderBottomRightRadius: '6px'
-                                }}>
-                                    {bg.name}
-                                </span>
                             </button>
                         ))}
                     </div>
                 );
 
                 return (
-                    // Wrap the grid in the scrollable div
                     <div style={{
-                        display: 'flex',
+                        maxHeight: 'calc(100% - 10px)',
                         overflowY: 'auto',
-                        maxHeight: isMobileView ? '80px' : '150px', 
-                        paddingRight: '5px' 
+                        padding: '5px',
+                        boxSizing: 'border-box',
+                        width: '100%'
                     }}>
                         {backgroundGrid}
                     </div>
@@ -1410,7 +1392,7 @@ const Configurator = () => {
                                     </div>
 
                                     <div style={{
-                                        flex: 1,
+                                        height: '90px',
                                         overflowY: 'auto',
                                         padding: '8px',
                                         width: '100%',
@@ -1454,11 +1436,10 @@ const Configurator = () => {
                                                 boxSizing: 'border-box',
                                                 cursor: 'pointer',
                                                 position: 'relative',
-                                                opacity: currentCardIndex === 0 ? 0.3 : 1,
                                                 transition: 'background 0.2s ease',
                                                 outline: 'none'
                                             }}
-                                            onMouseEnter={(e) => { if (currentCardIndex !== 0) e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)'; }}
+                                            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)'; }}
                                             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                                         >
                                             <span style={{
@@ -1487,11 +1468,10 @@ const Configurator = () => {
                                                 boxSizing: 'border-box',
                                                 cursor: 'pointer',
                                                 position: 'relative',
-                                                opacity: currentCardIndex === carouselCards.length - 1 ? 0.3 : 1, 
                                                 transition: 'background 0.2s ease',
                                                 outline: 'none'
                                             }}
-                                            onMouseEnter={(e) => { if (currentCardIndex !== carouselCards.length - 1) e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)'; }}
+                                            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)'; }}
                                             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                                         >
                                             <span style={{
@@ -1535,7 +1515,7 @@ const Configurator = () => {
                                     </div>
 
                                     <div style={{
-                                        flex: 1,
+                                        height: '250px',
                                         overflowY: 'auto',
                                         padding: '20px',
                                         width: '100%',
