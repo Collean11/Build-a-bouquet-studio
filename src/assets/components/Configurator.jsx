@@ -5,6 +5,8 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import BalloonBouquetV4 from './BalloonBouquetV4';
 import { Suspense } from 'react';
+// Import loadable
+import loadable from '@loadable/component'; 
 // Note: We're using Three.js from both @react-three/fiber and @google/model-viewer
 // This causes a warning about multiple instances, but it's necessary for our use case
 // as we need both libraries for different features (3D editing and AR viewing)
@@ -13,6 +15,12 @@ import { Environment } from '@react-three/drei';
 import { MeshReflectorMaterial } from '@react-three/drei';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase';
+
+// --- LAZY LOAD THE AR VIEW --- 
+const LazyARView = loadable(() => import('./ARView'), {
+  fallback: <div style={{ /* Basic loading text */ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'white', zIndex: 1000 }}>Loading AR Viewer...</div>, 
+});
+// --- END LAZY LOAD ---
 
 const balloonTypeOptions = [
     { name: 'Latex', value: 'A' },
@@ -182,6 +190,7 @@ const Configurator = () => {
                         }));
                         
                         // Set the model source directly
+                        console.log('AR: Preload complete, setting model-viewer src.')
                         modelViewer.src = modelBlobUrl;
                     } catch (error) {
                         console.error('Error preloading model:', error);
@@ -192,29 +201,8 @@ const Configurator = () => {
 
                 preloadModel();
 
-                const handleLoad = () => {
-                    // Force AR button to be visible
-                    const arButton = modelViewer.shadowRoot?.querySelector('#ar-button');
-                    if (arButton) {
-                        arButton.style.display = 'block';
-                        arButton.style.opacity = '1';
-                        arButton.style.visibility = 'visible';
-                        arButton.style.position = 'fixed';
-                        arButton.style.bottom = '20px';
-                        arButton.style.right = '20px';
-                        arButton.style.zIndex = '1006';
-                    }
-
-                    // Always set AR supported to true
-                    setArSupported(true);
-                };
-
-                modelViewer.addEventListener('load', handleLoad);
-                
-                // Cleanup
-                return () => {
-                    modelViewer.removeEventListener('load', handleLoad);
-                };
+                // No cleanup needed for load listener
+                // return () => { ... }; 
             }
         }
     }, [showAR, modelBlobUrl]);
@@ -293,14 +281,14 @@ const Configurator = () => {
             
             const downloadUrl = await getDownloadURL(storageRef);
             console.log('AR: Model URL created:', downloadUrl);
-            
-            // Set the DIRECT Firebase download URL for model-viewer
-            console.log("\n\n*** DEBUG: EXECUTING NEW CODE PATH - USING DIRECT URL ***\n\n");
-            console.log('AR: Setting model-viewer src to direct Firebase URL:', downloadUrl);
-            setModelBlobUrl(downloadUrl); // Use the direct download URL
+            setModelBlobUrl(downloadUrl); // Set the URL
 
+            // --- NO MORE DELAY NEEDED HERE --- 
+            // The lazy loading handles the delay
+            console.log('AR: Setting showAR to true (will trigger lazy load).');
             setShowAR(true);
-            console.log('AR: Model should now load in viewer (using direct URL)');
+            // --- END REMOVED DELAY ---
+
         } catch (error) {
             console.error('AR: Export failed', error);
             setArError('Failed to prepare model for AR view.');
@@ -1079,7 +1067,7 @@ const Configurator = () => {
                                 top: '20px',
                                 right: '20px'
                             } : {
-                            bottom: '20px',
+                                bottom: '20px',
                                 right: '20px'
                             }),
                             zIndex: 1003,
@@ -1110,8 +1098,10 @@ const Configurator = () => {
                             e.currentTarget.style.transform = 'scale(1)';
                             e.currentTarget.style.boxShadow = '0 4px 12px rgba(233, 30, 99, 0.3)';
                         }}
+                        disabled={isLoading}
+                        title="View in AR"
                     >
-                        AR
+                        {isLoading ? <div style={{ border: '3px solid rgba(255,255,255,0.3)', borderTop: '3px solid white', borderRadius: '50%', width: '20px', height: '20px', animation: 'spin 1s linear infinite' }}></div> : 'AR'}
                     </button>
 
                     {showUI && (
@@ -1416,176 +1406,19 @@ const Configurator = () => {
                 </>
             )}
 
+            {/* --- RENDER LAZY AR VIEW --- */}
+            {/* Render the lazy component when showAR and modelBlobUrl are ready */}
+            {/* Pass necessary props down */}
             {showAR && modelBlobUrl && (
-                <div className="ar-container" style={{ 
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100vh',
-                    zIndex: 1000,
-                    background: 'rgba(255, 255, 255, 0.15)',
-                    backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    border: '1px solid rgba(255, 255, 255, 0.3)'
-                }}>
-                    {isLoading && <LoadingIndicator />}
-                    <button 
-                        className="exit-ar-button" 
-                        onClick={handleExitAR}
-                        style={{
-                            position: 'fixed',
-                            top: '20px',
-                            right: '20px',
-                            zIndex: 1001,
-                            padding: '10px 20px',
-                            backgroundColor: '#ff69b4',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '5px',
-                            cursor: 'pointer',
-                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                        }}
-                    >
-                        Exit AR
-                    </button>
-                    {arError && (
-                        <div className="ar-error" style={{
-                            position: 'fixed',
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            backgroundColor: 'rgba(255, 0, 0, 0.8)',
-                            color: 'white',
-                            padding: '20px',
-                            borderRadius: '10px',
-                            zIndex: 1002
-                        }}>
-                            {arError}
-                        </div>
-                    )}
-                    <style>
-                        {`
-                            @keyframes spin {
-                                0% { transform: rotate(0deg); }
-                                100% { transform: rotate(360deg); }
-                            }
-                            model-viewer {
-                                width: 100%;
-                                height: 100%;
-                                background-color: transparent;
-                                --poster-color: transparent;
-                                position: fixed;
-                                top: 0;
-                                left: 0;
-                                right: 0;
-                                bottom: 0;
-                                --ar-button-background: #FF69B4;
-                                --ar-button-border-radius: 50%;
-                                --ar-button-color: white;
-                                --ar-button-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                            }
-                            
-                            model-viewer::part(default-ar-button),
-                            model-viewer::part(ar-button),
-                            #ar-button,
-                            .ar-button {
-                                background-color: #FF69B4 !important;
-                                border-radius: 50% !important;
-                                box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
-                                position: fixed !important;
-                                bottom: 20px !important;
-                                right: 20px !important;
-                                z-index: 1006 !important;
-                                display: flex !important;
-                                align-items: center !important;
-                                justify-content: center !important;
-                                opacity: 1 !important;
-                                visibility: visible !important;
-                                pointer-events: auto !important;
-                                width: 60px !important;
-                                height: 60px !important;
-                                padding: 0 !important;
-                                margin: 0 !important;
-                                backdropFilter: blur(10px) !important;
-                                WebkitBackdropFilter: blur(10px) !important;
-                                border: none !important;
-                                cursor: pointer !important;
-                                transition: all 0.2s ease !important;
-                            }
-                            model-viewer::part(default-ar-button)::before,
-                            model-viewer::part(ar-button)::before,
-                            #ar-button::before,
-                            .ar-button::before {
-                                content: '' !important;
-                                display: block !important;
-                                width: 24px !important;
-                                height: 24px !important;
-                                background-size: contain !important;
-                                background-repeat: no-repeat !important;
-                                background-position: center !important;
-                                position: absolute !important;
-                                top: 50% !important;
-                                left: 50% !important;
-                                transform: translate(-50%, -50%) !important;
-                                margin: 0 !important;
-                                padding: 0 !important;
-                            }
-                            model-viewer::part(default-ar-button):hover,
-                            model-viewer::part(ar-button):hover,
-                            #ar-button:hover,
-                            .ar-button:hover {
-                                background-color: #FF1493 !important;
-                                transform: scale(1.1) !important;
-                                box-shadow: 0 6px 16px rgba(0,0,0,0.3) !important;
-                            }
-                            model-viewer::part(default-ar-button):active,
-                            model-viewer::part(ar-button):active,
-                            #ar-button:active,
-                            .ar-button:active {
-                                transform: scale(0.95) !important;
-                            }
-                        `}
-                    </style>
-                    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                        {isLoading && <LoadingIndicator />}
-                        {showAR && (
-                            <model-viewer
-                                src={modelBlobUrl}
-                                ios-src={modelBlobUrl}
-                                alt="AR Balloon Bouquet"
-                                ar
-                                ar-modes="quick-look webxr scene-viewer"
-                                camera-controls
-                                shadow-intensity="1"
-                                auto-rotate
-                                camera-orbit="45deg 55deg 2.5m"
-                                min-camera-orbit="auto auto 0.1m"
-                                max-camera-orbit="auto auto 10m"
-                                loading="eager"
-                                crossOrigin="anonymous"
-                                style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    backgroundColor: 'transparent'
-                                }}
-                                onError={(error) => {
-                                    console.error('Model viewer error:', error);
-                                    setArError('Failed to load AR model. Please try again.');
-                                }}
-                                onLoad={() => {
-                                    console.log('AR: Model loaded successfully');
-                                    setIsLoading(false);
-                                }}
-                            >
-                            </model-viewer>
-                        )}
-                    </div>
-                </div>
+                <LazyARView 
+                    modelBlobUrl={modelBlobUrl}
+                    handleExitAR={handleExitAR} // Pass exit handler down
+                    arError={arError}           // Pass error state down
+                    setArError={setArError}     // Pass error setter down
+                    isLoading={isLoading}       // Pass loading state (though might not be needed inside)
+                />
             )}
+            {/* --- END RENDER LAZY AR VIEW --- */} 
         </>
     );
 };

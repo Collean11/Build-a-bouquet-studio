@@ -13,9 +13,10 @@
   },
   "dependencies": {
     "@google/model-viewer": "^3.4.0",
+    "@loadable/component": "^5.16.4",
     "@react-three/drei": "^9.99.0",
     "@react-three/fiber": "^8.15.16",
-    "@react-three/postprocessing": "^2.15.13",
+    "@react-three/postprocessing": "^2.19.1",
     "@react-three/xr": "^6.6.12",
     "buffer": "^6.0.3",
     "cors": "^2.8.5",

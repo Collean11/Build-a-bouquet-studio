@@ -38,7 +38,7 @@ export const CustomizationProvider = ({ children }) => {
         // Pastel Colors
         { name: 'Soft Pink', value: '#FFB6C1' },
         { name: 'Baby Blue', value: '#87CEEB' },
-        { name: 'Butter Yellow', value: '#FFD700' },
+        { name: 'Butter Yellow', value: '#FFFACD' },
         { name: 'Lavender', value: '#DDA0DD' },
         { name: 'Mint Green', value: '#98FB98' },
         { name: 'Peach', value: '#FFA07A' },
@@ -62,9 +62,9 @@ export const CustomizationProvider = ({ children }) => {
         // Vibrant Colors
         { name: 'Hot Pink', value: '#FF69B4' },
         { name: 'Electric Blue', value: '#00FFFF' },
-        { name: 'Sunshine Yellow', value: '#FFD700' },
+        { name: 'Sunshine Yellow', value: '#FFEB3B' },
         { name: 'Electric Purple', value: '#9B30FF' },
-        { name: 'Neon Green', value: '#39FF14' },
+        { name: 'Neon Green', value: '#7FFF00' },
         { name: 'Coral', value: '#FF7F50' },
         
         // Metallic Colors
