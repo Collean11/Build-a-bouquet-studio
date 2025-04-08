@@ -143,7 +143,6 @@ const ARView = ({ modelBlobUrl, handleExitAR, arError, setArError, isLoading: in
                     <model-viewer
                         id="balloon-ar-viewer" // Added ID for querySelector
                         src={modelBlobUrl}
-                        ios-src={modelBlobUrl} // Keep for potential Quick Look use
                         alt="AR Balloon Bouquet"
                         ar
                         ar-modes="webxr quick-look scene-viewer" // Keep all modes
