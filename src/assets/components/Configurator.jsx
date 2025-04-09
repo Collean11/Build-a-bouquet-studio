@@ -1,12 +1,12 @@
 import { useCustomization } from "../../contexts/Customization";
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, useGLTF } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import BalloonBouquetV4 from './BalloonBouquetV4';
 import { Suspense } from 'react';
-// Import directly
-// import ARView from './ARView';
+// Import loadable
+import loadable from '@loadable/component'; 
 // Note: We're using Three.js from both @react-three/fiber and @google/model-viewer
 // This causes a warning about multiple instances, but it's necessary for our use case
 // as we need both libraries for different features (3D editing and AR viewing)
@@ -15,8 +15,12 @@ import { Environment } from '@react-three/drei';
 import { MeshReflectorMaterial } from '@react-three/drei';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
+
+// --- LAZY LOAD THE AR VIEW --- 
+const LazyARView = loadable(() => import('./ARView'), {
+  fallback: <div style={{ /* Basic loading text */ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'white', zIndex: 1000 }}>Loading AR Viewer...</div>, 
+});
+// --- END LAZY LOAD ---
 
 const balloonTypeOptions = [
     { name: 'Latex', value: 'A' },
@@ -25,14 +29,56 @@ const balloonTypeOptions = [
 ];
 
 const backgroundOptions = [
-    { id: 'bg-black', label: 'Black', value: '#000000', primaryColor: '#333333' },
-    { id: 'bg-white', label: 'White', value: '#ffffff', primaryColor: '#EEEEEE' },
-    { id: 'bg-sky', label: 'Sky', value: 'linear-gradient(135deg, #a1c4fd, #c2e9fb)', primaryColor: '#a1c4fd' },
-    { id: 'bg-rose', label: 'Rose', value: 'linear-gradient(135deg, #E91E63, #FF80AB, #FFC0CB)', primaryColor: '#E91E63' },
-    { id: 'bg-pastel-dream', label: 'Pastel Dream', value: 'linear-gradient(135deg, #FFB6C1, #CDB7F0)', primaryColor: '#B19CD9' },
-    { id: 'bg-gradient-1', label: 'Sunrise', value: 'linear-gradient(135deg, #f8b500, #ff4e50)', primaryColor: '#f8b500' },
-    { id: 'bg-gradient-2', label: 'Ocean', value: 'linear-gradient(135deg, #2980b9, #6dd5fa)', primaryColor: '#2980b9' },
-    { id: 'bg-gradient-3', label: 'Forest', value: 'linear-gradient(135deg, #134e5e, #71b280)', primaryColor: '#134e5e' },
+    { 
+        name: 'Black', 
+        value: '#000000', 
+        primaryColor: '#333333' 
+    },
+    { 
+        name: 'White', 
+        value: '#FFFFFF', 
+        primaryColor: '#EEEEEE' 
+    },
+    { 
+        name: 'Sunset', 
+        value: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E53 50%, #FFD93D 100%)', 
+        primaryColor: '#FF6B6B' 
+    },
+    { 
+        name: 'Ocean', 
+        value: 'linear-gradient(135deg, #4ECDC4 0%, #45B7AF 50%, #2C3E50 100%)', 
+        primaryColor: '#4ECDC4' 
+    },
+    { 
+        name: 'Lavender', 
+        value: 'linear-gradient(135deg, #A8A4E6 0%, #D4B0F7 50%, #E6E6FA 100%)', 
+        primaryColor: '#A8A4E6' 
+    },
+    { 
+        name: 'Mint', 
+        value: 'linear-gradient(135deg, #98D8AA 0%, #B5EAD7 50%, #C7CEEA 100%)', 
+        primaryColor: '#98D8AA' 
+    },
+    { 
+        name: 'Blush', 
+        value: 'linear-gradient(135deg, #FFB5B5 0%, #FFD1D1 50%, #FFE4E1 100%)', 
+        primaryColor: '#FFB5B5' 
+    },
+    { 
+        name: 'Sky', 
+        value: 'linear-gradient(135deg, #89CFF0 0%, #B0E0E6 50%, #E0FFFF 100%)', 
+        primaryColor: '#89CFF0' 
+    },
+    { 
+        name: 'Rose', 
+        value: 'linear-gradient(135deg, #E91E63 0%, #FF80AB 50%, #FFC0CB 100%)',
+        primaryColor: '#E91E63'
+    },
+    { 
+        name: 'Forest', 
+        value: 'linear-gradient(135deg, #98FB98 0%, #90EE90 50%, #E8F5E9 100%)', 
+        primaryColor: '#98FB98' 
+    }
 ];
 
 const Configurator = () => {
@@ -65,28 +111,6 @@ const Configurator = () => {
     const carouselRef = useRef(null);
     const [touchStart, setTouchStart] = useState(null);
     const [touchEnd, setTouchEnd] = useState(null);
-
-    // --- Add State and Effect for AR Loading Indicator --- 
-    const [isViewerLoading, setIsViewerLoading] = useState(false); // Initially false
-
-    useEffect(() => {
-        let timer = null;
-        if (showAR && modelBlobUrl) {
-             // Reset loading state when AR starts
-            setIsViewerLoading(true);
-            // Force hide loading indicator after a delay (e.g., 2 seconds)
-            timer = setTimeout(() => {
-                console.log('Configurator (AR Inline): Forcing loading indicator off after timeout.');
-                setIsViewerLoading(false);
-            }, 2000); // 2000 milliseconds = 2 seconds
-        }
-        // Cleanup the timer if the component unmounts or AR closes before timeout
-        return () => { 
-            if (timer) clearTimeout(timer); 
-            setIsViewerLoading(false); // Ensure loading is false on cleanup
-        }
-    }, [showAR, modelBlobUrl]); 
-    // --- End AR Loading Indicator Logic ---
 
     // Add useEffect for welcome message
     useEffect(() => {
@@ -183,303 +207,102 @@ const Configurator = () => {
         }
     }, [showAR, modelBlobUrl]);
 
-    // Preload the model for AR export (optional but good practice)
-    useGLTF.preload('/models/balloon_bouquet_v4_condensed.glb');
-
-    // Memoize materials specifically for export generation
-    const exportMaterialsCache = useRef({}); // Use a ref to persist cache across renders
-
-    // Memoize the DRACOLoader instance
-    const dracoLoader = useMemo(() => {
-        const loader = new DRACOLoader();
-        loader.setDecoderPath('/draco/'); // Path to the Draco decoder files in public/
-        return loader;
-    }, []);
-
-    useEffect(() => {
-        // This effect creates/updates materials needed for export based on current state
-        // It tries to cache them in exportMaterialsCache.current
-        const updatedCache = { ...exportMaterialsCache.current }; // Start with existing cache
-        let changed = false;
-
-        // Balloon Materials
-        Object.keys(balloonColors).forEach(balloonId => {
-            const color = balloonColors[balloonId];
-            const materialType = balloonMaterials[balloonId];
-            const key = `${balloonId}-${color}-${materialType}`;
-
-            if (!updatedCache[key]) { // Only create if not in cache
-                console.log(`AR Export Prep: Creating material for key: ${key}`);
-                let newMaterial;
-                if (materialType === 'metallic') {
-                    newMaterial = new THREE.MeshStandardMaterial({
-                        color: color,
-                        metalness: 1.0,
-                        roughness: 0.1,
-                        name: key
-                    });
-                } else if (materialType === 'matte') {
-                    newMaterial = new THREE.MeshStandardMaterial({
-                        color: color,
-                        metalness: 0.1,
-                        roughness: 0.9,
-                        name: key
-                    });
-                } else { // Default to standard/glossy
-                    newMaterial = new THREE.MeshStandardMaterial({
-                        color: color,
-                        metalness: 0.3,
-                        roughness: 0.3,
-                        name: key
-                    });
-                }
-                updatedCache[key] = newMaterial;
-                changed = true;
-            }
-        });
-
-        // String Material (ensure single-sided)
-        const stringKey = 'whiteStringMat-singleSided';
-        if (!updatedCache[stringKey]) {
-            console.log(`AR Export Prep: Creating single-sided string material: ${stringKey}`);
-            updatedCache[stringKey] = new THREE.MeshStandardMaterial({
-                color: 0xffffff,
-                roughness: 0.8,
-                metalness: 0.1,
-                name: stringKey,
-                side: THREE.FrontSide // Ensure single-sided
-            });
-            changed = true;
-        }
-
-        if (changed) {
-            exportMaterialsCache.current = updatedCache;
-             console.log('AR Export Prep: Updated material cache:', exportMaterialsCache.current);
-        }
-
-    }, [balloonColors, balloonMaterials]); // Re-run only when colors or material types change
-
     const handleArView = async () => {
-        // No longer relies on bouquetGroupRef.current for export
+        if (!bouquetGroupRef.current) { 
+            console.error('AR: Bouquet group ref not ready');
+            return;
+        }
 
         try {
             setArError(null);
             setIsLoading(true);
-            console.log('AR: Starting independent model preparation for export...');
-
-            // 1. Load the base GLB model data specifically for export
-            const gltfData = await new Promise((resolve, reject) => {
-                 const loader = new GLTFLoader();
-                 loader.setDRACOLoader(dracoLoader); // Set the DRACOLoader instance
-                 loader.load(
-                     // Corrected path (verified against public/models/ listing)
-                     '/models/balloonBouquetV4-transformed-v2.glb', 
-                     (loadedGltf) => {
-                          console.log('AR Export: Base GLB loaded successfully.');
-                          resolve(loadedGltf);
-                     },
-                     undefined, // Progress callback (optional)
-                     (error) => {
-                         console.error('AR Export: Error loading base GLB:', error);
-                         reject(new Error("Failed to load base model for AR."));
-                     }
-                 );
-            });
+            console.log('AR: Starting model export...');
             
-            const sceneToExport = gltfData.scene.clone(true); // Clone the scene graph
-            console.log('AR Export: Cloned base scene graph.');
-            console.log('AR Export Prep: Current Material Cache:', exportMaterialsCache.current);
-            console.log('AR Export Prep: Current Balloon Types:', balloonTypes);
-            console.log('AR Export Prep: Current Balloon Colors:', balloonColors);
-            console.log('AR Export Prep: Current Balloon Materials:', balloonMaterials);
+            const exporter = new GLTFExporter();
+            const objectToExport = bouquetGroupRef.current; 
+            
+            // --- Add Debugging --- 
+            console.log('AR DEBUG: Object to export (bouquetGroupRef.current):', objectToExport);
 
-            // 2. Apply customizations (visibility, materials) to the cloned scene
-            sceneToExport.traverse((node) => {
-                if (node.isMesh) {
-                    console.log(`AR Export Prep: Processing Mesh: ${node.name}`);
+            // Explicitly check if the object is valid and has traverse method
+            if (!objectToExport || typeof objectToExport.traverse !== 'function') {
+                console.error('AR DEBUG: Invalid object for export. bouquetGroupRef.current is not a traversable Object3D:', objectToExport);
+                // Provide a more specific error message
+                setArError('AR Error: Cannot find the 3D model data to export.'); 
+                setIsLoading(false); // Stop loading indicator
+                return; // Stop execution
+            }
+            // --- End Debugging ---
 
-                    // Skip the weight
-                    if (node.name === 'Balloon_weight') {
-                        console.log(`  - Skipping Balloon_weight node.`);
-                        return; 
-                    }
-
-                    // Updated pattern matching for names like TopA, Middle1B, Bottom3C
-                    // Regex to capture Position (e.g., Top, Middle1, Bottom3) and optional Shape (A, B, C)
-                    const match = node.name.match(/^(Top|Middle1|Middle2|Middle3|Bottom1|Bottom2|Bottom3)([ABC])?$/);
-
-                    if (match) {
-                        const positionCamelCase = match[1]; // e.g., Top, Middle1
-                        const balloonShape = match[2] || 'A'; // Shape (A, B, C) or default to A if not present
-                        
-                        // Convert CamelCase position to lowercase key used in state
-                        const positionMap = {
-                            'Top': 'top',
-                            'Middle1': 'middle1',
-                            'Middle2': 'middle2',
-                            'Middle3': 'middle3',
-                            'Bottom1': 'bottom1',
-                            'Bottom2': 'bottom2',
-                            'Bottom3': 'bottom3'
-                        };
-                        const balloonId = positionMap[positionCamelCase]; 
-
-                        if (!balloonId) {
-                            console.warn(`  - Pattern Warning: Could not map position ${positionCamelCase} to a state key for node ${node.name}.`);
-                            return; // Skip if we can't map the position
-                        }
-
-                        console.log(`  - Balloon Node (New Pattern): ID=${balloonId}, Shape=${balloonShape}`);
-
-                        // Visibility based on selected type for this position
-                        const targetType = balloonTypes[balloonId];
-                        if (!targetType) {
-                            console.warn(`  - Visibility Warning: No type found in balloonTypes for ID: ${balloonId}. Defaulting to A.`);
-                            node.visible = (balloonShape === 'A');
-                        } else {
-                            node.visible = (balloonShape === targetType);
-                            console.log(`  - Visibility Check: Target=${targetType}, Node visible=${node.visible}`);
-                        }
-                        
-                        // Apply Material only if visible
-                        if (node.visible) {
-                            const color = balloonColors[balloonId];
-                            const materialType = balloonMaterials[balloonId];
-                            const materialKey = `${balloonId}-${color}-${materialType}`;
-                            console.log(`  - Material Check: Attempting key=${materialKey}`);
-                            
-                            if (exportMaterialsCache.current[materialKey]) {
-                                node.material = exportMaterialsCache.current[materialKey];
-                                console.log(`  - Material Applied: ${materialKey}`); 
-                            } else {
-                                console.warn(`  - Material Warning: Key ${materialKey} not found in cache for ${node.name}. Using original material.`);
-                            }
-                        } else {
-                            console.log(`  - Material Check: Node is not visible, skipping material assignment.`);
-                        }
-                    // Example check for Strings (assuming name like StringTop, StringMiddle1)
-                    } else if (node.name.startsWith('String')) { 
-                        const stringPosMatch = node.name.match(/^String(Top|Middle1|Middle2|Middle3|Bottom1|Bottom2|Bottom3)$/);
-                        if (stringPosMatch) {
-                            const positionCamelCase = stringPosMatch[1];
-                            const positionMap = {
-                                'Top': 'top',
-                                'Middle1': 'middle1',
-                                'Middle2': 'middle2',
-                                'Middle3': 'middle3',
-                                'Bottom1': 'bottom1',
-                                'Bottom2': 'bottom2',
-                                'Bottom3': 'bottom3'
-                            };
-                            const balloonId = positionMap[positionCamelCase];
-
-                            if (!balloonId) {
-                                console.warn(`  - Pattern Warning: Could not map position ${positionCamelCase} for string node ${node.name}.`);
-                                return; 
-                            }
-
-                            console.log(`  - String Node (New Pattern): ID=${balloonId}`);
-                            const targetType = balloonTypes[balloonId];
-                            if (!targetType) {
-                                console.warn(`  - Visibility Warning: No type found for ID: ${balloonId}. Defaulting string visibility.`);
-                                node.visible = false;
-                            } else {
-                                node.visible = (targetType === 'A'); // Strings only visible for type A
-                                console.log(`  - Visibility Check: TargetType=${targetType}, String visible=${node.visible}`);
-                            }
-
-                            if (node.visible) {
-                                const stringKey = 'whiteStringMat-singleSided';
-                                console.log(`  - Material Check: Attempting key=${stringKey}`);
-                                if (exportMaterialsCache.current[stringKey]) {
-                                    node.material = exportMaterialsCache.current[stringKey];
-                                    console.log(`  - Material Applied: ${stringKey}`);
-                                } else {
-                                    console.warn(`  - Material Warning: Cached string material ${stringKey} not found for ${node.name}. Using original.`);
-                                }
-                            } else {
-                                console.log(`  - Material Check: Node is not visible, skipping material assignment.`);
-                            }
-                        } else {
-                             console.log(`  - String node ${node.name} does not match expected String[Position] pattern.`);
-                        }
-                    } else {
-                        console.log(`  - Node ${node.name} does not match expected Balloon ([Position][Shape]) or String (String[Position]) pattern.`);
-                    }
+            console.log('AR DEBUG: Object seems valid, attempting traverse...'); // Log before traverse
+            objectToExport.traverse((object) => { // This is the line (~236) that was failing 
+                if (object.isMesh) {
+                    // Ensure materials are suitable for GLB export if needed
+                    // We might need to temporarily swap materials or handle this
+                    object.castShadow = true; 
+                    object.receiveShadow = true;
                 }
             });
 
-            console.log('AR Export Prep: Customizations applied to cloned scene.');
+            console.log('AR DEBUG: Traverse completed.'); // Log after traverse
 
-            // 3. Export the prepared scene
-            const exporter = new GLTFExporter();
-            console.log('AR DEBUG: Starting exporter.parse with prepared scene...');
-
-            let gltf;
-            gltf = await new Promise((resolve, reject) => {
+            const gltf = await new Promise((resolve, reject) => {
                 exporter.parse(
-                    sceneToExport, // Use the prepared scene object
-                    (gltfDataResult) => {
-                        console.log('AR DEBUG: GLTFExporter.parse successful for prepared scene.', gltfDataResult);
-                        resolve(gltfDataResult);
+                    objectToExport,
+                    (gltf) => {
+                        console.log('AR: Model exported successfully');
+                        resolve(gltf);
                     },
                     (error) => {
-                        console.error('AR: GLTFExporter parse error for prepared scene', error);
-                        reject(error); // Use the actual error object
+                        console.error('AR: GLTFExporter parse error', error);
+                        reject(error);
                     },
-                    {
-                        binary: true,
-                        trs: false, // Transforms should be baked in the original model
-                        embedImages: true, // Necessary if model has textures (unlikely here)
-                        maxTextureSize: 1024, // Keep reasonable limit
-                        // onlyVisible: false // We manually set visibility, export the structure
+                    { 
+                        binary: true, 
+                        trs: false,
+                        onlyVisible: true,
+                        embedImages: true,
+                        maxTextureSize: 1024
                     }
                 );
             });
 
-            // --- Check result and proceed with upload ---
-            if (!(gltf instanceof ArrayBuffer)) {
-                 console.error('AR Error: Export did not produce ArrayBuffer');
-                 throw new Error("GLTFExporter failed to produce valid data.");
-             }
-
-            console.log(`AR DEBUG: Exported Prepared Scene GLB size (ArrayBuffer): ${gltf.byteLength} bytes`);
+            const timestamp = Date.now();
+            const filename = `ar-model-${timestamp}.glb`;
+            const storageRef = ref(storage, `ar-models/${filename}`);
             const blob = new Blob([gltf], { type: 'model/gltf-binary' });
-            console.log(`AR DEBUG: Prepared Scene Blob size before upload: ${blob.size} bytes`);
+            
+            console.log('AR: Uploading to Firebase Storage...');
+            await uploadBytes(storageRef, blob, {
+                contentType: 'model/gltf-binary',
+                cacheControl: 'public, max-age=300'
+            });
+            console.log('AR: Upload complete');
+            
+            const downloadUrl = await getDownloadURL(storageRef);
+            console.log('AR: Model URL created:', downloadUrl);
+            setModelBlobUrl(downloadUrl); // Set the URL
 
-            // --- Upload to Firebase Storage ---
-             const timestamp = Date.now();
-             const filename = `ar-model-${timestamp}.glb`; 
-             const storageRef = ref(storage, `ar-models/${filename}`);
-
-            console.log('AR: Uploading Prepared Scene GLB to Firebase Storage...');
-            await uploadBytes(storageRef, blob);
-            console.log('AR: Prepared Scene Upload complete');
-
-            const downloadURL = await getDownloadURL(storageRef);
-            console.log('AR: Prepared Scene Model URL created:', downloadURL);
-
-            setModelBlobUrl(downloadURL); // Set the URL for model-viewer
-            setShowAR(true);              // Show the AR overlay
-            console.log('AR: Setting showAR to true.');
+            // --- NO MORE DELAY NEEDED HERE --- 
+            // The lazy loading handles the delay
+            console.log('AR: Setting showAR to true (will trigger lazy load).');
+            setShowAR(true);
+            // --- END REMOVED DELAY ---
 
         } catch (error) {
-            console.error('AR: Export or Preparation failed', error);
-            // Use optional chaining and provide a default message
-            const errorMessage = error?.message || 'An unknown error occurred during AR preparation/export.';
-            setArError(`AR Error: ${errorMessage}`);
+            console.error('AR: Export failed', error);
+            setArError('Failed to prepare model for AR view.');
         } finally {
-            setIsLoading(false); // Ensure loading indicator stops
-            console.log('AR: Preparation & Export process finished (or failed).');
+            setIsLoading(false);
         }
     };
 
     const handleExitAR = () => {
-        console.log('AR: Exiting AR view.');
         setShowAR(false);
-        setModelBlobUrl(null); // Clear the URL
-        setArError(null);     // Clear any errors
-        setIsViewerLoading(false); // Ensure loading indicator is off
+        if (modelBlobUrl) {
+            URL.revokeObjectURL(modelBlobUrl);
+            setModelBlobUrl(null);
+        }
     };
 
     const handleARButtonClick = () => {
@@ -499,8 +322,7 @@ const Configurator = () => {
             left: '50%',
             transform: 'translate(-50%, -50%)',
             textAlign: 'center',
-            zIndex: 1000,
-            color: 'white' // Ensure text is visible
+            zIndex: 1000
         }}>
             <div style={{
                 border: '4px solid #f3f3f3',
@@ -511,7 +333,7 @@ const Configurator = () => {
                 animation: 'spin 1s linear infinite',
                 margin: '0 auto 10px'
             }} />
-            <p>Loading 3D Model...</p>
+            <p>Preparing AR View...</p>
         </div>
     );
 
@@ -572,7 +394,7 @@ const Configurator = () => {
             title: 'Balloon Type',
             icon: '🎯',
             content: ({ balloonTypes, toggleBalloonType, selectedBalloon, balloonTypeOptions }) => {
-                return (
+                const typeContent = (
                     <div style={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(2, 1fr)',
@@ -601,6 +423,17 @@ const Configurator = () => {
                         ))}
                     </div>
                 );
+
+                return (
+                    // Wrap the type content in the scrollable div
+                    <div style={{
+                        overflowY: 'auto',
+                        maxHeight: isMobileView ? '100px' : '150px',
+                        paddingRight: '5px'
+                    }}>
+                        {typeContent}
+                    </div>
+                );
             }
         },
         {
@@ -608,7 +441,7 @@ const Configurator = () => {
             title: 'Colors',
             icon: '🎨',
             content: ({ balloonColors, setColor, selectedBalloon, colorOptions }) => {
-                return (
+                const colorContent = (
                     <div style={{
                         display: 'flex',
                         flexDirection: 'column',
@@ -666,6 +499,16 @@ const Configurator = () => {
                         ))}
                     </div>
                 );
+                
+                return (
+                    <div style={{
+                        overflowY: 'auto',
+                        maxHeight: isMobileView ? '100px' : '150px',
+                        paddingRight: '5px'
+                    }}>
+                        {colorContent}
+                    </div>
+                );
             }
         },
         {
@@ -711,37 +554,56 @@ const Configurator = () => {
                     <div style={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(2, 1fr)',
-                        gap: '8px',
+                        gap: '6px',
                         width: '100%'
                     }}>
                         {backgroundOptions.map((bg) => (
                             <button
-                                key={bg.id}
+                                key={bg.name}
                                 onClick={() => setSelectedBackground(bg.value)}
-                                title={bg.label}
                                 style={{
-                                    background: bg.value,
-                                    border: selectedBackground === bg.value ? '2px solid #333' : '2px solid transparent',
+                                    aspectRatio: '1',
                                     borderRadius: '8px',
-                                    height: '60px',
+                                    background: bg.value,
+                                    border: selectedBackground === bg.value ? '2px solid #E91E63' : '2px solid rgba(255, 255, 255, 0.8)',
+                                    boxShadow: selectedBackground === bg.value ? '0 4px 12px rgba(233, 30, 99, 0.3)' : '0 2px 4px rgba(0,0,0,0.1)',
+                                    transform: selectedBackground === bg.value ? 'scale(1.05)' : 'scale(1)',
+                                    transition: 'all 0.3s ease',
+                                    position: 'relative',
                                     cursor: 'pointer',
-                                    overflow: 'hidden',
-                                    transition: 'border 0.2s ease',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    padding: 0,
+                                    width: '100%'
                                 }}
                             >
+                                <span style={{
+                                    position: 'absolute',
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    padding: '4px',
+                                    background: 'rgba(0, 0, 0, 0.6)',
+                                    color: 'white',
+                                    fontSize: '10px',
+                                    textAlign: 'center',
+                                    backdropFilter: 'blur(4px)',
+                                    WebkitBackdropFilter: 'blur(4px)',
+                                    borderBottomLeftRadius: '6px',
+                                    borderBottomRightRadius: '6px'
+                                }}>
+                                    {bg.name}
+                                </span>
                             </button>
                         ))}
                     </div>
                 );
 
                 return (
+                    // Wrap the grid in the scrollable div
                     <div style={{
-                        maxHeight: 'calc(100% - 10px)',
+                        display: 'flex',
                         overflowY: 'auto',
-                        padding: '5px',
-                        boxSizing: 'border-box',
-                        width: '100%'
+                        maxHeight: isMobileView ? '80px' : '150px', 
+                        paddingRight: '5px' 
                     }}>
                         {backgroundGrid}
                     </div>
@@ -1115,7 +977,7 @@ const Configurator = () => {
                             position: 'fixed',
                             ...(isMobileView ? {
                                 top: '20px',
-                                left: '20px'
+                                right: '140px'
                             } : {
                                 top: '20px',
                                 right: '20px'
@@ -1318,7 +1180,8 @@ const Configurator = () => {
                                         flexShrink: 0
                                     }}>
                                         <button 
-                                            onClick={() => setCurrentCardIndex(prev => (prev - 1 + carouselCards.length) % carouselCards.length)}
+                                            onClick={() => setCurrentCardIndex(prev => Math.max(0, prev - 1))}
+                                            disabled={currentCardIndex === 0}
                                             style={{
                                                 background: 'transparent',
                                                 border: 'none',
@@ -1331,9 +1194,10 @@ const Configurator = () => {
                                                 fontSize: '16px',
                                                 textAlign: 'center',
                                                 color: '#333',
+                                                opacity: currentCardIndex === 0 ? 0.5 : 1,
                                                 transition: 'background 0.2s ease'
                                             }}
-                                            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)'; }}
+                                            onMouseEnter={(e) => { if (currentCardIndex !== 0) e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)'; }}
                                             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                                         >
                                             {'<'}
@@ -1342,7 +1206,8 @@ const Configurator = () => {
                                             {carouselCards[currentCardIndex].title}
                                         </h3>
                                         <button 
-                                            onClick={() => setCurrentCardIndex(prev => (prev + 1) % carouselCards.length)}
+                                            onClick={() => setCurrentCardIndex(prev => Math.min(carouselCards.length - 1, prev + 1))}
+                                            disabled={currentCardIndex === carouselCards.length - 1}
                                             style={{
                                                 background: 'transparent',
                                                 border: 'none',
@@ -1355,9 +1220,10 @@ const Configurator = () => {
                                                 fontSize: '16px',
                                                 textAlign: 'center',
                                                 color: '#333',
+                                                opacity: currentCardIndex === carouselCards.length - 1 ? 0.5 : 1,
                                                 transition: 'background 0.2s ease'
                                             }}
-                                            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)'; }}
+                                            onMouseEnter={(e) => { if (currentCardIndex !== carouselCards.length - 1) e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)'; }}
                                             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                                         >
                                             {'>'}
@@ -1392,7 +1258,7 @@ const Configurator = () => {
                                     </div>
 
                                     <div style={{
-                                        height: '90px',
+                                        flex: 1,
                                         overflowY: 'auto',
                                         padding: '8px',
                                         width: '100%',
@@ -1400,6 +1266,7 @@ const Configurator = () => {
                                         WebkitOverflowScrolling: 'touch',
                                         scrollbarWidth: 'none',
                                         msOverflowStyle: 'none',
+                                        '&::-webkit-scrollbar': { display: 'none' }
                                     }}>
                                         {carouselCards[currentCardIndex].content({
                                             selectedBalloon, setSelectedBalloon, balloonTypes, toggleBalloonType,
@@ -1425,7 +1292,8 @@ const Configurator = () => {
                                         flexShrink: 0 
                                     }}>
                                         <button 
-                                            onClick={() => setCurrentCardIndex(prev => (prev - 1 + carouselCards.length) % carouselCards.length)}
+                                            onClick={() => setCurrentCardIndex(prev => Math.max(0, prev - 1))}
+                                            disabled={currentCardIndex === 0}
                                             style={{
                                                 background: 'transparent',
                                                 border: 'none',
@@ -1436,10 +1304,11 @@ const Configurator = () => {
                                                 boxSizing: 'border-box',
                                                 cursor: 'pointer',
                                                 position: 'relative',
+                                                opacity: currentCardIndex === 0 ? 0.3 : 1,
                                                 transition: 'background 0.2s ease',
                                                 outline: 'none'
                                             }}
-                                            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)'; }}
+                                            onMouseEnter={(e) => { if (currentCardIndex !== 0) e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)'; }}
                                             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                                         >
                                             <span style={{
@@ -1457,7 +1326,8 @@ const Configurator = () => {
                                             {carouselCards[currentCardIndex].title}
                                         </h3>
                                         <button 
-                                            onClick={() => setCurrentCardIndex(prev => (prev + 1) % carouselCards.length)}
+                                            onClick={() => setCurrentCardIndex(prev => Math.min(carouselCards.length - 1, prev + 1))}
+                                            disabled={currentCardIndex === carouselCards.length - 1}
                                             style={{
                                                 background: 'transparent',
                                                 border: 'none',
@@ -1468,10 +1338,11 @@ const Configurator = () => {
                                                 boxSizing: 'border-box',
                                                 cursor: 'pointer',
                                                 position: 'relative',
+                                                opacity: currentCardIndex === carouselCards.length - 1 ? 0.3 : 1, 
                                                 transition: 'background 0.2s ease',
                                                 outline: 'none'
                                             }}
-                                            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)'; }}
+                                            onMouseEnter={(e) => { if (currentCardIndex !== carouselCards.length - 1) e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)'; }}
                                             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                                         >
                                             <span style={{
@@ -1515,7 +1386,7 @@ const Configurator = () => {
                                     </div>
 
                                     <div style={{
-                                        height: '250px',
+                                        flex: 1,
                                         overflowY: 'auto',
                                         padding: '20px',
                                         width: '100%',
@@ -1535,136 +1406,64 @@ const Configurator = () => {
                 </>
             )}
 
-            {/* --- INLINE AR VIEW JSX --- */}
+            {/* --- RENDER LAZY AR VIEW --- */}
+            {/* Render the lazy component when showAR and modelBlobUrl are ready */}
+            {/* Pass necessary props down */}
             {showAR && modelBlobUrl && (
-                 <div className="ar-container" style={{ 
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100vh',
-                    zIndex: 1000,
-                    background: 'rgba(0, 0, 0, 0.7)', // Darker background for focus
-                    backdropFilter: 'blur(10px)',
-                    WebkitBackdropFilter: 'blur(10px)',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                }}>
-                    {/* Use Configurator's isViewerLoading state */}
-                    {isViewerLoading && <LoadingIndicator />}
-                    
-                    {/* Exit Button */}
-                    <button 
-                        className="exit-ar-button" 
-                        onClick={handleExitAR}
-                        style={{
-                            position: 'fixed',
-                            top: '20px',
-                            right: '20px',
-                            zIndex: 1001,
-                            padding: '10px 20px',
-                            backgroundColor: 'rgba(255, 105, 180, 0.8)', // Slightly transparent
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '5px',
-                            cursor: 'pointer',
-                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                        }}
-                    >
-                        Exit AR
-                    </button>
-
-                    {/* Error Display */}
-                    {arError && (
-                        <div className="ar-error" style={{
-                            position: 'fixed',
-                            bottom: '80px',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            backgroundColor: 'rgba(255, 0, 0, 0.8)',
-                            color: 'white',
-                            padding: '10px 15px',
-                            borderRadius: '5px',
-                            zIndex: 1002,
-                            textAlign: 'center'
-                        }}>
-                            {arError}
-                        </div>
-                    )}
-
-                    {/* Style Tag for model-viewer */} 
-                    <style>
-                        {`
-                            @keyframes spin {
-                                0% { transform: rotate(0deg); }
-                                100% { transform: rotate(360deg); }
-                            }
-                            model-viewer#balloon-ar-viewer { 
-                                width: 100%;
-                                height: 100%;
-                                background-color: transparent;
-                                --poster-color: transparent;
-                                position: absolute; 
-                                top: 0;
-                                left: 0;
-                                right: 0;
-                                bottom: 0;
-                                --ar-button-background: #FF69B4;
-                                --ar-button-border-radius: 50%;
-                                --ar-button-color: white;
-                                --ar-button-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                            }
-                            model-viewer#balloon-ar-viewer::part(default-ar-button) {
-                                display: flex !important;
-                                align-items: center !important;
-                                justify-content: center !important;
-                                padding: 0 !important;
-                                position: absolute !important; 
-                                top: 20px !important;
-                                left: 20px !important;
-                            }
-                        `}
-                    </style>
-
-                    {/* Model Viewer (absolute position within the relative container) */} 
-                    <div style={{ position: 'absolute', width: '100%', height: '100%', top: 0, left: 0 }}>
-                         {modelBlobUrl && (
-                            <model-viewer
-                                id="balloon-ar-viewer" 
-                                src={modelBlobUrl}
-                                alt="AR Balloon Bouquet"
-                                ar
-                                ar-modes="webxr quick-look scene-viewer" 
-                                camera-controls
-                                shadow-intensity="1"
-                                auto-rotate
-                                camera-orbit="45deg 55deg 2.5m"
-                                min-camera-orbit="auto auto 0.1m"
-                                max-camera-orbit="auto auto 10m"
-                                loading="eager"
-                                crossOrigin="anonymous"
-                                style={{ 
-                                    width: '100%', 
-                                    height: '100%',
-                                    backgroundColor: 'transparent'
-                                }}
-                                onError={(event) => {
-                                    console.error('Configurator (AR Inline): Model viewer error:', event.detail);
-                                    setArError('Failed to load 3D model.');
-                                    setIsViewerLoading(false); 
-                                }}
-                                onLoad={() => {
-                                    console.log('Configurator (AR Inline): Model loaded successfully (onLoad event)');
-                                    setIsViewerLoading(false); 
-                                }}
-                            >
-                            </model-viewer>
-                         )} 
-                    </div>
-                </div>
+                <LazyARView 
+                    modelBlobUrl={modelBlobUrl}
+                    handleExitAR={handleExitAR} // Pass exit handler down
+                    arError={arError}           // Pass error state down
+                    setArError={setArError}     // Pass error setter down
+                    isLoading={isLoading}       // Pass loading state (though might not be needed inside)
+                />
             )}
-            {/* --- END INLINE AR VIEW JSX --- */}
+            {/* --- END RENDER LAZY AR VIEW --- */} 
+
+            <style>
+                {`
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                    model-viewer {
+                        width: 100%;
+                        height: 100%;
+                        background-color: transparent;
+                        --poster-color: transparent;
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        /* Default AR button styles (can be overridden below) */
+                        --ar-button-background: #FF69B4;
+                        --ar-button-border-radius: 50%;
+                        --ar-button-color: white;
+                        --ar-button-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                    }
+                    
+                    /* Add styles to center the icon INSIDE the default AR button */
+                    model-viewer::part(default-ar-button) {
+                        display: flex !important; /* Use flexbox */
+                        align-items: center !important; /* Vertical center */
+                        justify-content: center !important; /* Horizontal center */
+                        padding: 0 !important; /* Remove default padding if any */
+
+                        /* --- Force position to top-left --- */
+                        position: absolute !important;
+                        top: 20px !important;      /* Position from the top */
+                        left: 20px !important;     /* Position from the left */
+                        transform: unset !important; /* Remove previous centering transform */
+                        right: unset !important;  /* Remove default positioning */
+                        bottom: unset !important; /* Remove default positioning */
+                    }
+
+                    model-viewer:hover {
+                        --ar-button-background: #FF1493; 
+                    }
+                `}
+            </style>
         </>
     );
 };
